@@ -1,0 +1,58 @@
+---
+title: "Anthropometric measures by SEP"
+author: "Pearl Ante-Testard"
+date: "`r Sys.Date()`"
+output: 
+html_document:
+theme: default
+highlight: default
+code_folding: hide
+toc: true
+toc_depth: 3
+toc_float:
+    collapsed: true
+    smooth_scroll: true
+knit: (function(inputFile, encoding) {
+    rmarkdown::render(inputFile, 
+    encoding   = encoding, 
+    output_dir = here::here("2-initial-analysis/output")
+    )})
+
+---
+
+```{r setup packages, include=FALSE}
+
+library(tidyverse)
+
+
+```
+
+```{r clean workspace} 
+rm(list=ls(all=TRUE))
+
+```
+
+```{r load data}
+
+df_analysis <- readRDS(here::here("data", "1-final",
+                                  "IPD_full_20200905_formatted.RDS")) %>% 
+               filter(!is.na(laz_el))
+
+```
+
+```{r 1}
+
+table(df_analysis$arm_primary, useNA = "always")
+
+```
+
+```{r 2}
+
+df_analysis %>%                         
+  group_by(arm_primary, wealth_rank) %>%         
+  summarise_at(vars(laz_el),                  
+               list(length = length, mean = mean)) 
+
+
+```
+
