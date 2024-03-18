@@ -23,6 +23,18 @@ df_analysis <- readRDS(here::here("data", "1-final",
 
 ################### Wealth rank by study ###################
 
+# Create a boxplot of sesindex by study
+sesindex_plot <- ggplot(df_analysis, aes(x = study, y = sesindex)) +
+  geom_boxplot() +
+  labs(x = "Study", y = "Wealth index scores", title = "Wealth index scores by study") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5), # Center the plot title
+      axis.text.x = element_text(angle = 45, hjust = 1), # Rotate x-axis labels for better readability # nolint
+      legend.position = "none") # Remove legend
+
+# Save the plot as a PNG file
+ggsave(here::here("output", "sesindex_by_study.png"), plot = sesindex_plot, width = 10, height = 6, dpi = 300) # nolint
+
 # Create a boxplot of wealth rank by study
 p <- ggplot(df_analysis, aes(x = study, y = wealth_rank)) +
   geom_boxplot() +
