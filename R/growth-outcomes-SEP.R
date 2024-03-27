@@ -26,7 +26,7 @@ df_analysis <- readRDS(here::here("data", "1-final",
 # Create a boxplot of sesindex by study
 sesindex_plot <- ggplot(df_analysis, aes(x = study, y = sesindex)) +
   geom_boxplot() +
-  labs(x = "Study", y = "Wealth index scores", title = "Wealth index scores by study") +
+  labs(x = "Study", y = "Wealth index scores", title = "Wealth index scores by study") + # nolint
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5), # Center the plot title
       axis.text.x = element_text(angle = 45, hjust = 1), # Rotate x-axis labels for better readability # nolint
@@ -163,9 +163,9 @@ ggsave(here::here("output", "wlz_el_by_wealth_rank.png"), plot = r_el, width = 1
 
 ################### Severe stunted by study ###################
 # Filter the data to only include rows where severe_stunted_bl is "1"
-df_analysis_filtered_ss <- df_analysis[df_analysis$severe_stunted_bl == 1,]
+df_analysis_filtered_ss <- df_analysis[df_analysis$severe_stunted_bl == 1, ]
 df_analysis_filtered_ss <- df_analysis_filtered_ss %>%
-                           filter(!is.na(severe_stunted_bl))
+                           filter(!is.na(severe_stunted_bl)) # nolint
 
 # Create a barplot of severe stunting at baseline by study
 severe_stunted_bl_plot <- ggplot(df_analysis_filtered_ss, aes(x = study, fill = severe_stunted_bl)) + # nolint
@@ -178,9 +178,9 @@ severe_stunted_bl_plot <- ggplot(df_analysis_filtered_ss, aes(x = study, fill = 
 
 
 # Filter the data to only include rows where severe_stunted_el is "1"
-df_analysis_filtered_ss <- df_analysis[df_analysis$severe_stunted_el == 1,]
+df_analysis_filtered_ss <- df_analysis[df_analysis$severe_stunted_el == 1, ]
 df_analysis_filtered_ss <- df_analysis_filtered_ss %>%
-                           filter(!is.na(severe_stunted_el))
+                           filter(!is.na(severe_stunted_el)) # nolint
 
 # Create a barplot of severe stunting at endline by study
 severe_stunted_el_plot <- ggplot(df_analysis_filtered_ss, aes(x = study, fill = severe_stunted_el)) + # nolint
@@ -200,9 +200,9 @@ ggsave(here::here("output", "severe_stunted_bl_el_by_study.png"), plot = severe_
 
 ################### Severe wasting by study ###################
 # Filter the data to only include rows where severe_wasted_bl is "1"
-df_analysis_filtered_sw <- df_analysis[df_analysis$severe_wasted_bl == 1,]
+df_analysis_filtered_sw <- df_analysis[df_analysis$severe_wasted_bl == 1, ]
 df_analysis_filtered_sw <- df_analysis_filtered_sw %>%
-                           filter(!is.na(severe_wasted_bl))
+  filter(!is.na(severe_wasted_bl))
 
 # Create a barplot of severe wasting at baseline by study
 severe_wasted_bl_plot <- ggplot(df_analysis_filtered_sw, aes(x = study, fill = severe_wasted_bl)) + # nolint
@@ -214,9 +214,9 @@ severe_wasted_bl_plot <- ggplot(df_analysis_filtered_sw, aes(x = study, fill = s
       legend.position = "none") # Remove legend
 
 # Filter the data to only include rows where severe_wasted_el is "1"
-df_analysis_filtered_sw <- df_analysis[df_analysis$severe_wasted_el == 1,]
+df_analysis_filtered_sw <- df_analysis[df_analysis$severe_wasted_el == 1, ]
 df_analysis_filtered_sw <- df_analysis_filtered_sw %>%
-                           filter(!is.na(severe_wasted_el))
+  filter(!is.na(severe_wasted_el))
 
 # Create a barplot of severe wasting at endline by study
 severe_wasted_el_plot <- ggplot(df_analysis_filtered_sw, aes(x = study, fill = severe_wasted_el)) + # nolint
@@ -247,10 +247,10 @@ df_analysis_prev <- df_analysis %>%
          laz_el_mean = mean(laz_el, na.rm = TRUE),
          wlz_bl_mean = mean(wlz_bl, na.rm = TRUE),
          wlz_el_mean = mean(wlz_el, na.rm = TRUE),
-         severe_stunted_bl_prevalence = sum(severe_stunted_bl == 1, na.rm = TRUE) / n() * 100,
-         severe_stunted_el_prevalence = sum(severe_stunted_el == 1, na.rm = TRUE) / n() * 100,
-         severe_wasted_bl_prevalence = sum(severe_wasted_bl == 1, na.rm = TRUE) / n() * 100,
-         severe_wasted_el_prevalence = sum(severe_wasted_el == 1, na.rm = TRUE) / n() * 100) %>%
+         severe_stunted_bl_prevalence = sum(severe_stunted_bl == 1, na.rm = TRUE) / n() * 100, # nolint
+         severe_stunted_el_prevalence = sum(severe_stunted_el == 1, na.rm = TRUE) / n() * 100, # nolint
+         severe_wasted_bl_prevalence = sum(severe_wasted_bl == 1, na.rm = TRUE) / n() * 100, # nolint
+         severe_wasted_el_prevalence = sum(severe_wasted_el == 1, na.rm = TRUE) / n() * 100) %>% # nolint
   ungroup()
 
 # Mean LAZ at baseline
@@ -279,7 +279,7 @@ ggsave(here::here("output", "laz_bl_el_mean_by_study.png"), plot = laz_bl_el_pre
 
 #### Mean WLZ at baseline and endline by study ####
 
-# Mean WLZ at baseline 
+# Mean WLZ at baseline
 wlz_bl_prev <- ggplot(df_analysis_prev, aes(x = study, y = wlz_bl_mean)) +
   geom_bar(stat = "summary") +
   labs(x = "Study", y = "Mean", title = "Mean WLZ at baseline by study") + # nolint
@@ -306,7 +306,7 @@ ggsave(here::here("output", "wlz_bl_el_mean_by_study.png"), plot = wlz_bl_el_pre
 #### Prevalence of severe stunting at baseline and endline by study ####
 
 # Prevalence of severe stunting at baseline
-severe_stunted_bl_prev <- ggplot(df_analysis_prev, aes(x = study, y = severe_stunted_bl_prevalence)) +
+severe_stunted_bl_prev <- ggplot(df_analysis_prev, aes(x = study, y = severe_stunted_bl_prevalence)) + # nolint
   geom_bar(stat = "summary") +
   labs(x = "Study", y = "Prevalence (%)", title = "Prevalence of severe stunting at baseline by study") + # nolint
   theme_bw() +
@@ -315,7 +315,7 @@ severe_stunted_bl_prev <- ggplot(df_analysis_prev, aes(x = study, y = severe_stu
       legend.position = "none") # Remove legend
 
 # Prevalence of severe stunting at endline
-severe_stunted_el_prev <- ggplot(df_analysis_prev, aes(x = study, y = severe_stunted_el_prevalence)) +
+severe_stunted_el_prev <- ggplot(df_analysis_prev, aes(x = study, y = severe_stunted_el_prevalence)) + # nolint
   geom_bar(stat = "summary") +
   labs(x = "Study", y = "Prevalence (%)", title = "Prevalence of severe stunting at endline by study") + # nolint
   theme_bw() +
@@ -323,8 +323,8 @@ severe_stunted_el_prev <- ggplot(df_analysis_prev, aes(x = study, y = severe_stu
       axis.text.x = element_text(angle = 45, hjust = 1), # Rotate x-axis labels for better readability # nolint
       legend.position = "none") # Remove legend
 
-# Merge the plots 
-severe_stunted_bl_el_prev <- plot_grid(severe_stunted_bl_prev, severe_stunted_el_prev, ncol = 2, align = "vh")
+# Merge the plots  # nolint
+severe_stunted_bl_el_prev <- plot_grid(severe_stunted_bl_prev, severe_stunted_el_prev, ncol = 2, align = "vh") # nolint
 
 # Save the plot as a PNG file
 ggsave(here::here("output", "severe_stunted_bl_el_prev_by_study.png"), plot = severe_stunted_bl_el_prev, width = 10, height = 6, dpi = 300) # nolint
@@ -332,7 +332,7 @@ ggsave(here::here("output", "severe_stunted_bl_el_prev_by_study.png"), plot = se
 #### Prevalence of severe wasting at baseline and endline by study ####
 
 # Prevalence of severe wasting at baseline
-severe_wasted_bl_prev <- ggplot(df_analysis_prev, aes(x = study, y = severe_wasted_bl_prevalence)) +
+severe_wasted_bl_prev <- ggplot(df_analysis_prev, aes(x = study, y = severe_wasted_bl_prevalence)) + # nolint
   geom_bar(stat = "summary") +
   labs(x = "Study", y = "Prevalence (%)", title = "Prevalence of severe wasting at baseline by study") + # nolint
   theme_bw() +
@@ -341,7 +341,7 @@ severe_wasted_bl_prev <- ggplot(df_analysis_prev, aes(x = study, y = severe_wast
       legend.position = "none") # Remove legend
 
 # Prevalence of severe wasting at endline
-severe_wasted_el_prev <- ggplot(df_analysis_prev, aes(x = study, y = severe_wasted_el_prevalence)) +
+severe_wasted_el_prev <- ggplot(df_analysis_prev, aes(x = study, y = severe_wasted_el_prevalence)) + # nolint
   geom_bar(stat = "summary") +
   labs(x = "Study", y = "Prevalence (%)", title = "Prevalence of severe wasting at endline by study") + # nolint
   theme_bw() +
@@ -350,7 +350,7 @@ severe_wasted_el_prev <- ggplot(df_analysis_prev, aes(x = study, y = severe_wast
       legend.position = "none") # Remove legend
 
 # Merge the plots
-severe_wasted_bl_el_prev <- plot_grid(severe_wasted_bl_prev, severe_wasted_el_prev, ncol = 2, align = "vh")
+severe_wasted_bl_el_prev <- plot_grid(severe_wasted_bl_prev, severe_wasted_el_prev, ncol = 2, align = "vh") # nolint
 
 # Save the plot as a PNG file
 ggsave(here::here("output", "severe_wasted_bl_el_prev_by_study.png"), plot = severe_wasted_bl_el_prev, width = 10, height = 6, dpi = 300) # nolint
