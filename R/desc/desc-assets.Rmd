@@ -1,0 +1,718 @@
+---
+title: "Descriptive Statistics of asset-based variables by arm"
+author: "Pearl Ante-Testard"
+date: "`r Sys.Date()`"
+ # officedown yaml header
+output: word_document
+  #officedown::rdocx_document
+   # theme: default
+    #highlight: default
+    #code_folding: hide
+    #toc: true
+    #toc_depth: 3,,
+    #toc_float:
+      #collapsed: true
+      #smooth_scroll: true
+knit: (function(inputFile, encoding) {
+        rmarkdown::render(inputFile, 
+                          encoding   = encoding, 
+                          output_dir = here::here("output")
+                          )})
+---
+
+
+```{r clean environment, echo=FALSE}
+
+rm(list=ls(all=TRUE))
+
+```
+
+```{r configuration, echo = FALSE, message=FALSE}
+
+library(here)
+library(dplyr)
+library(table1)
+library(haven)
+
+```
+
+```{r read formatted data, echo=FALSE}
+
+df_analysis <- readRDS(file = here::here("data", "1-final",
+                      "df_analysis_assets_joined.rds")) 
+
+# View the dataframe
+colnames(df_analysis)
+
+```
+
+
+# s101_GHANA
+arm: arm_primary
+
+```{r render 1 function, echo=FALSE}
+
+df_analysis_ghana <- df_analysis %>%
+  filter(study == "s101_GHANA") %>%
+  filter(!is.na(arm_primary)) %>%
+  mutate(arm_primary = factor(arm_primary, levels = c(0, 1), 
+                              labels = c("Control", "Intervention")),
+         tv_iwi_ghana = as.numeric(tv_iwi_ghana),
+         car_iwi_ghana = as.numeric(car_iwi_ghana),
+         bike_iwi_ghana = as.numeric(bike_iwi_ghana),
+         cheap_iwi_ghana = as.numeric(cheap_iwi_ghana),
+         elec_iwi_ghana = as.numeric(elec_iwi_ghana))
+
+
+# custom render function for the variables
+rndr <- function(x, name, ...) {
+    if (!is.numeric(x)) return(render.categorical.default(x))
+    what <- switch(name,
+                   tv_iwi_ghana  = "Mean (SD)",
+                   car_iwi_ghana = "Mean (SD)",
+                   bike_iwi_ghana = "Mean (SD)",
+                   cheap_iwi_ghana = "Mean (SD)",
+                   elec_iwi_ghana = "Mean (SD)")
+                   
+    parse.abbrev.render.code(c("", what))(x)
+}
+
+
+table1(~ tv_iwi_ghana + car_iwi_ghana + bike_iwi_ghana + cheap_iwi_ghana + 
+         elec_iwi_ghana + watersource_iwi_ghana + toiletfac_iwi_ghana + 
+         rooms_iwi_ghana  | arm_primary, data = df_analysis_ghana, overall = F, rowlabelhead = "Asset variables", render = rndr, topclass="Rtable1-grid Rtable1-shade Rtable1-times Rtable1-row")
+
+```
+
+
+# s102_DYADG
+arm: arms_maternal
+
+
+```{r render 2 function, echo=FALSE}
+
+df_analysis_dyadg <- df_analysis %>%
+  filter(study == "s102_DYADG") %>%
+  filter(!is.na(arms_maternal)) %>%
+  mutate(arms_maternal = factor(arms_maternal, levels = c(0, 1), 
+                              labels = c("Control", "Intervention")),
+         tv_iwi_dyadg = as.numeric(tv_iwi_dyadg),
+         ref_iwi_dyadg = as.numeric(ref_iwi_dyadg),
+         phone_iwi_dyadg = as.numeric(phone_iwi_dyadg),
+         car_iwi_dyadg = as.numeric(car_iwi_dyadg),
+         bike_iwi_dyadg = as.numeric(bike_iwi_dyadg),
+         cheap_iwi_dyadg = as.numeric(cheap_iwi_dyadg),
+         expensive_iwi_dyadg = as.numeric(expensive_iwi_dyadg),
+         elec_iwi_dyadg = as.numeric(elec_iwi_dyadg))
+
+
+# custom render function for the variables
+rndr <- function(x, name, ...) {
+    if (!is.numeric(x)) return(render.categorical.default(x))
+    what <- switch(name,
+                   tv_iwi_dyadg = "Mean (SD)",
+                   ref_iwi_dyadg = "Mean (SD)",
+                   phone_iwi_dyadg = "Mean (SD)",
+                   car_iwi_dyadg = "Mean (SD)",
+                   bike_iwi_dyadg = "Mean (SD)",
+                   cheap_iwi_dyadg = "Mean (SD)",
+                   expensive_iwi_dyadg = "Mean (SD)",
+                   elec_iwi_dyadg = "Mean (SD)")
+                   
+                   parse.abbrev.render.code(c("", what))(x)
+}
+
+
+table1(~ tv_iwi_dyadg + ref_iwi_dyadg + phone_iwi_dyadg + 
+         car_iwi_dyadg + bike_iwi_dyadg + cheap_iwi_dyadg + expensive_iwi_dyadg +
+         elec_iwi_dyadg + watersource_iwi_dyadg + floormat_iwi_dyadg +
+         toiletfac_iwi_dyadg + room_iwi_dyadg  | arms_maternal, data = df_analysis_dyadg, overall = F, rowlabelhead = "Asset variables", render = rndr, topclass="Rtable1-grid Rtable1-shade Rtable1-times Rtable1-row")
+
+```
+
+# s103_DYADM
+arm: arms_maternal
+
+
+```{r render 3 function, echo=FALSE}
+
+df_analysis_dyadm <- df_analysis %>%
+  filter(study == "s103_DYADM") %>%
+  filter(!is.na(arms_maternal)) %>%
+  mutate(arms_maternal = factor(arms_maternal, levels = c(0, 1), 
+                              labels = c("Control", "Intervention")),
+         tv_iwi_dyadm = as.numeric(tv_iwi_dyadm),
+         ref_iwi_dyadm = as.numeric(ref_iwi_dyadm),
+         phone_iwi_dyadm = as.numeric(phone_iwi_dyadm),
+         car_iwi_dyadm = as.numeric(car_iwi_dyadm),
+         bike_iwi_dyadm = as.numeric(bike_iwi_dyadm),
+         cheap_iwi_dyadm = as.numeric(cheap_iwi_dyadm),
+         expensive_iwi_dyadm = as.numeric(expensive_iwi_dyadm),
+         elec_iwi_dyadm = as.numeric(elec_iwi_dyadm))
+
+# custom render function for the variables
+rndr <- function(x, name, ...) {
+    if (!is.numeric(x)) return(render.categorical.default(x))
+    what <- switch(name,
+                   tv_iwi_dyadm = "Mean (SD)",
+                   ref_iwi_dyadm = "Mean (SD)",
+                   phone_iwi_dyadm = "Mean (SD)",
+                   car_iwi_dyadm = "Mean (SD)",
+                   bike_iwi_dyadm = "Mean (SD)",
+                   cheap_iwi_dyadm = "Mean (SD)",
+                   expensive_iwi_dyadm = "Mean (SD)",
+                   elec_iwi_dyadm = "Mean (SD)")
+                   
+                   parse.abbrev.render.code(c("", what))(x)
+}
+
+
+table1(~ tv_iwi_dyadm + ref_iwi_dyadm +
+         phone_iwi_dyadm + car_iwi_dyadm + bike_iwi_dyadm + cheap_iwi_dyadm +
+         expensive_iwi_dyadm + elec_iwi_dyadm + watersource_iwi_dyadm +
+         toiletfac_iwi_dyadm + rooms_iwi_dyadm   | arms_maternal, data = df_analysis_dyadm, overall = F, rowlabelhead = "Asset variables", render = rndr, topclass="Rtable1-grid Rtable1-shade Rtable1-times Rtable1-row")
+
+```
+
+# s104_PROMISBF
+arm: arm_primary
+
+```{r render 4 function, echo=FALSE}
+
+df_analysis_promisbf <- df_analysis %>%
+  filter(study == "s104_PROMISBF") %>%
+  filter(!is.na(arm_primary)) %>%
+  mutate(arm_primary = factor(arm_primary, levels = c(0, 1), 
+                              labels = c("Control", "Intervention")),
+         tv_iwi_promisbf = as.numeric(tv_iwi_promisbf),
+         phone_iwi_promisbf = as.numeric(phone_iwi_promisbf),
+         car_iwi_promisbf = as.numeric(car_iwi_promisbf),
+         bike_iwi_promisbf = as.numeric(bike_iwi_promisbf),
+         cheap_iwi_promisbf = as.numeric(cheap_iwi_promisbf),
+         expensive_iwi_promisbf = as.numeric(expensive_iwi_promisbf),
+         elec_iwi_promisbf = as.numeric(elec_iwi_promisbf))
+
+
+# custom render function for the variables
+rndr <- function(x, name, ...) {
+    if (!is.numeric(x)) return(render.categorical.default(x))
+    what <- switch(name,
+                   tv_iwi_promisbf = "Mean (SD)",
+                   phone_iwi_promisbf = "Mean (SD)",
+                   car_iwi_promisbf = "Mean (SD)",
+                   bike_iwi_promisbf = "Mean (SD)",
+                   cheap_iwi_promisbf = "Mean (SD)",
+                   expensive_iwi_promisbf = "Mean (SD)",
+                   elec_iwi_promisbf = "Mean (SD)")
+                   
+                   parse.abbrev.render.code(c("", what))(x)
+}
+
+
+table1(~ tv_iwi_promisbf +
+         phone_iwi_promisbf + car_iwi_promisbf + bike_iwi_promisbf + cheap_iwi_promisbf +
+         expensive_iwi_promisbf + elec_iwi_promisbf + watersource_iwi_promisbf +
+         floormat_iwi_promisbf + toiletfac_iwi_promisbf    | arm_primary, data = df_analysis_promisbf, overall = F, rowlabelhead = "Asset variables", render = rndr, topclass="Rtable1-grid Rtable1-shade Rtable1-times Rtable1-row")
+
+```
+
+# s104_PROMISBF_CS baseline
+arm: arm_primary
+
+```{r render 5 function, echo=FALSE}
+
+df_analysis_promisbf_cs <- df_analysis %>%
+  filter(study == "s104_PROMISBF_CS") %>%
+  filter(!is.na(arm_primary)) %>%
+  mutate(arm_primary = factor(arm_primary, levels = c(0, 1), 
+                              labels = c("Control", "Intervention")),
+         tv_iwi_promisbfcsbl = as.numeric(tv_iwi_promisbfcsbl),
+         phone_iwi_promisbfcsbl = as.numeric(phone_iwi_promisbfcsbl),
+         car_iwi_promisbfcsbl = as.numeric(car_iwi_promisbfcsbl),
+         bike_iwi_promisbfcsbl = as.numeric(bike_iwi_promisbfcsbl),
+         cheap_iwi_promisbfcsbl = as.numeric(cheap_iwi_promisbfcsbl),
+         expensive_iwi_promisbfcsbl = as.numeric(expensive_iwi_promisbfcsbl))
+
+# custom render function for the variables
+rndr <- function(x, name, ...) {
+    if (!is.numeric(x)) return(render.categorical.default(x))
+    what <- switch(name,
+                   tv_iwi_promisbfcsbl = "Mean (SD)",
+                   phone_iwi_promisbfcsbl = "Mean (SD)",
+                   car_iwi_promisbfcsbl = "Mean (SD)",
+                   bike_iwi_promisbfcsbl = "Mean (SD)",
+                   cheap_iwi_promisbfcsbl = "Mean (SD)",
+                   expensive_iwi_promisbfcsbl = "Mean (SD)")
+                   #tv_iwi_promisbfcsel = "Mean (SD)",
+                   #phone_iwi_promisbfcsel = "Mean (SD)",
+                   #car_iwi_promisbfcsel = "Mean (SD)",
+                   #bike_iwi_promisbfcsel = "Mean (SD)",
+                   #cheap_iwi_promisbfcsel = "Mean (SD)",
+                   #expensive_iwi_promisbfcsel = "Mean (SD)",
+                   #watersource_iwi_promisbfcsel = "Mean (SD)",
+                   #toiletfac_iwi_promisbfcsel = "Mean (SD)")
+                   
+                   parse.abbrev.render.code(c("", what))(x)
+}
+
+
+table1(~ tv_iwi_promisbfcsbl +
+         phone_iwi_promisbfcsbl + car_iwi_promisbfcsbl + bike_iwi_promisbfcsbl +
+         cheap_iwi_promisbfcsbl + expensive_iwi_promisbfcsbl +
+         watersource_iwi_promisbfcsbl + toiletfac_iwi_promisbfcsbl + tv_iwi_promisbfcsel
+         #+ phone_iwi_promisbfcsel + car_iwi_promisbfcsel +
+         #bike_iwi_promisbfcsel + cheap_iwi_promisbfcsel + expensive_iwi_promisbfcsel +
+        #watersource_iwi_promisbfcsel + toiletfac_iwi_promisbfcsel  
+        | arm_primary, data = df_analysis_promisbf_cs, overall = F, rowlabelhead = "Asset variables", render = rndr, topclass="Rtable1-grid Rtable1-shade Rtable1-times Rtable1-row")
+
+```
+
+# s105_JiVitA
+arm: arm_primary
+
+```{r render 6 function, echo=FALSE}
+
+df_analysis_jivita <- df_analysis %>%
+  filter(study == "s105_JiVitA") %>%
+  filter(!is.na(arm_primary)) %>%
+  mutate(arm_primary = factor(arm_primary, levels = c(0, 1), 
+                              labels = c("Control", "Intervention")),
+         tv_iwi_jivita = as.numeric(tv_iwi_jivita),
+         phone_iwi_jivita = as.numeric(phone_iwi_jivita),
+         car_iwi_jivita = as.numeric(car_iwi_jivita),
+         bike_iwi_jivita = as.numeric(bike_iwi_jivita),
+         cheap_iwi_jivita = as.numeric(cheap_iwi_jivita),
+         expensive_iwi_jivita = as.numeric(expensive_iwi_jivita),
+         elec_iwi_jivita = as.numeric(elec_iwi_jivita))
+
+
+# custom render function for the variables
+rndr <- function(x, name, ...) {
+    if (!is.numeric(x)) return(render.categorical.default(x))
+    what <- switch(name,
+                   tv_iwi_jivita = "Mean (SD)",
+                   phone_iwi_jivita = "Mean (SD)",
+                   car_iwi_jivita = "Mean (SD)",
+                   bike_iwi_jivita = "Mean (SD)",
+                   cheap_iwi_jivita = "Mean (SD)",
+                   expensive_iwi_jivita = "Mean (SD)",
+                   elec_iwi_jivita = "Mean (SD)")
+                   
+                   parse.abbrev.render.code(c("", what))(x)
+}
+
+
+table1(~ tv_iwi_jivita +
+         phone_iwi_jivita + car_iwi_jivita + bike_iwi_jivita + cheap_iwi_jivita +
+         expensive_iwi_jivita + elec_iwi_jivita + watersource_iwi_jivita +
+         floormat_iwi_jivita + toiletfac_iwi_jivita    | arm_primary, data = df_analysis_jivita, overall = F, rowlabelhead = "Asset variables", render = rndr, topclass="Rtable1-grid Rtable1-shade Rtable1-times Rtable1-row")
+
+
+```
+
+# s106_RDNS
+arm: arm_primary
+
+```{r render 7 function, echo=FALSE}
+
+df_analysis_rdns <- df_analysis %>%
+  filter(study == "s106_RDNS") %>%
+  filter(!is.na(arm_primary)) %>%
+  mutate(arm_primary = factor(arm_primary, levels = c(0, 1), 
+                              labels = c("Control", "Intervention")),
+         tv_iwi_rdns = as.numeric(tv_iwi_rdns),
+         ref_iwi_rdns = as.numeric(ref_iwi_rdns),
+         phone_iwi_rdns = as.numeric(phone_iwi_rdns),
+         car_iwi_rdns = as.numeric(car_iwi_rdns),
+         bike_iwi_rdns = as.numeric(bike_iwi_rdns),
+         cheap_iwi_rdns = as.numeric(cheap_iwi_rdns),
+         expensive_iwi_rdns = as.numeric(expensive_iwi_rdns),
+         elec_iwi_rdns = as.numeric(elec_iwi_rdns))
+
+
+# custom render function for the variables
+rndr <- function(x, name, ...) {
+    if (!is.numeric(x)) return(render.categorical.default(x))
+    what <- switch(name,
+                   tv_iwi_rdns = "Mean (SD)",
+                   ref_iwi_rdns = "Mean (SD)",
+                   phone_iwi_rdns = "Mean (SD)",
+                   car_iwi_rdns = "Mean (SD)",
+                   bike_iwi_rdns = "Mean (SD)",
+                   cheap_iwi_rdns = "Mean (SD)",
+                   expensive_iwi_rdns = "Mean (SD)",
+                   elec_iwi_rdns = "Mean (SD)")
+                   
+                   parse.abbrev.render.code(c("", what))(x)
+}
+
+
+table1(~ tv_iwi_rdns + ref_iwi_rdns +
+         phone_iwi_rdns + car_iwi_rdns + bike_iwi_rdns + cheap_iwi_rdns +
+         expensive_iwi_rdns + elec_iwi_rdns + watersource_iwi_rdns +
+         floormat_iwi_rdns + toiletfac_iwi_rdns + room_iwi_rdns    | arm_primary, data = df_analysis_rdns, overall = F, rowlabelhead = "Asset variables", render = rndr, topclass="Rtable1-grid Rtable1-shade Rtable1-times Rtable1-row")
+
+
+```
+
+# s107_ZINC
+arm: arm_primary
+
+```{r render 8 function, echo=FALSE}
+
+df_analysis_zinc <- df_analysis %>%
+  filter(study == "s107_ZINC") %>%
+  filter(!is.na(arm_primary)) %>%
+  mutate(arm_primary = factor(arm_primary, levels = c(0, 1), 
+                              labels = c("Control", "Intervention")),
+         tv_iwi_zinc = as.numeric(tv_iwi_zinc),
+         ref_iwi_zinc = as.numeric(ref_iwi_zinc),
+         phone_iwi_zinc = as.numeric(phone_iwi_zinc),
+         car_iwi_zinc = as.numeric(car_iwi_zinc),
+         bike_iwi_zinc = as.numeric(bike_iwi_zinc),
+         cheap_iwi_zinc = as.numeric(cheap_iwi_zinc),
+         expensive_iwi_zinc = as.numeric(expensive_iwi_zinc),
+         elec_iwi_zinc = as.numeric(elec_iwi_zinc))
+
+
+# custom render function for the variables
+rndr <- function(x, name, ...) {
+    if (!is.numeric(x)) return(render.categorical.default(x))
+    what <- switch(name,
+                   tv_iwi_zinc = "Mean (SD)",
+                   ref_iwi_zinc = "Mean (SD)",
+                   phone_iwi_zinc = "Mean (SD)",
+                   car_iwi_zinc = "Mean (SD)",
+                   bike_iwi_zinc = "Mean (SD)",
+                   cheap_iwi_zinc = "Mean (SD)",
+                   expensive_iwi_zinc = "Mean (SD)",
+                   elec_iwi_zinc = "Mean (SD)")
+                   
+                   parse.abbrev.render.code(c("", what))(x)
+}
+
+
+table1(~ tv_iwi_zinc +
+         ref_iwi_zinc + phone_iwi_zinc + car_iwi_zinc + bike_iwi_zinc +
+         cheap_iwi_zinc + expensive_iwi_zinc + elec_iwi_zinc + watersource_iwi_zinc +
+         floormat_iwi_zinc + toiletfac_iwi_zinc + room_iwi_zinc    | arm_primary, data = df_analysis_zinc, overall = F, rowlabelhead = "Asset variables", render = rndr, topclass="Rtable1-grid Rtable1-shade Rtable1-times Rtable1-row")
+
+
+```
+
+
+# s108_SHINE_HIV-
+arm: arm_primary
+no asset variables yet
+
+
+
+# s109_PROMISM 
+arm: arm_primary
+
+```{r render 9 function, echo=FALSE}
+
+df_analysis_promismali <- df_analysis %>%
+  filter(study == "s109_PROMISM") %>%
+  filter(!is.na(arm_primary)) %>%
+  mutate(arm_primary = factor(arm_primary, levels = c(0, 1), 
+                              labels = c("Control", "Intervention")),
+         tv_iwi_promismali = as.numeric(tv_iwi_promismali),
+         phone_iwi_promismali = as.numeric(phone_iwi_promismali),
+         car_iwi_promismali = as.numeric(car_iwi_promismali),
+         bike_iwi_promismali = as.numeric(bike_iwi_promismali),
+         cheap_iwi_promismali = as.numeric(cheap_iwi_promismali),
+         expensive_iwi_promismali = as.numeric(expensive_iwi_promismali),
+         elec_iwi_promismali = as.numeric(elec_iwi_promismali))
+
+
+# custom render function for the variables
+rndr <- function(x, name, ...) {
+    if (!is.numeric(x)) return(render.categorical.default(x))
+    what <- switch(name,
+                   tv_iwi_promismali = "Mean (SD)",
+                   phone_iwi_promismali = "Mean (SD)",
+                   car_iwi_promismali = "Mean (SD)",
+                   bike_iwi_promismali = "Mean (SD)",
+                   cheap_iwi_promismali = "Mean (SD)",
+                   expensive_iwi_promismali = "Mean (SD)",
+                   elec_iwi_promismali = "Mean (SD)")
+                   
+                   parse.abbrev.render.code(c("", what))(x)
+}
+
+
+table1(~ tv_iwi_promismali + phone_iwi_promismali +
+         car_iwi_promismali + bike_iwi_promismali + cheap_iwi_promismali +
+         expensive_iwi_promismali + elec_iwi_promismali + watersource_iwi_promismali +
+         floormat_iwi_promismali + toiletfac_iwi_promismali    | arm_primary, data = df_analysis_promismali, overall = F, rowlabelhead = "Asset variables", render = rndr, topclass="Rtable1-grid Rtable1-shade Rtable1-times Rtable1-row")
+
+```
+
+# s109_PROMISM_CS baseline
+arm: arm_primary
+
+```{r render 10 function, echo=FALSE}
+
+df_analysis_promismali_cs <- df_analysis %>%
+  filter(study == "s109_PROMISM_CS") %>%
+  filter(!is.na(arm_primary)) %>%
+  mutate(arm_primary = factor(arm_primary, levels = c(0, 1), 
+                              labels = c("Control", "Intervention")),
+         tv_iwi_promismalicsbl = as.numeric(tv_iwi_promismalicsbl),
+         phone_iwi_promismalicsbl = as.numeric(phone_iwi_promismalicsbl),
+         car_iwi_promismalicsbl = as.numeric(car_iwi_promismalicsbl),
+         bike_iwi_promismalicsbl = as.numeric(bike_iwi_promismalicsbl),
+         cheap_iwi_promismalicsbl = as.numeric(cheap_iwi_promismalicsbl),
+         expensive_iwi_promismalicsbl = as.numeric(expensive_iwi_promismalicsbl))
+
+
+# custom render function for the variables
+rndr <- function(x, name, ...) {
+    if (!is.numeric(x)) return(render.categorical.default(x))
+    what <- switch(name,
+                   tv_iwi_promismalicsbl = "Mean (SD)",
+                   phone_iwi_promismalicsbl = "Mean (SD)",
+                   car_iwi_promismalicsbl = "Mean (SD)",
+                   bike_iwi_promismalicsbl = "Mean (SD)",
+                   cheap_iwi_promismalicsbl = "Mean (SD)",
+                   expensive_iwi_promismalicsbl = "Mean (SD)")
+                   
+                   parse.abbrev.render.code(c("", what))(x)
+}
+
+
+table1(~ tv_iwi_promismalicsbl +
+         phone_iwi_promismalicsbl + car_iwi_promismalicsbl + bike_iwi_promismalicsbl +
+         cheap_iwi_promismalicsbl + expensive_iwi_promismalicsbl +
+         watersource_iwi_promismalicsbl + toiletfac_iwi_promismalicsbl    | arm_primary, data = df_analysis_promismali_cs, overall = F, rowlabelhead = "Asset variables", render = rndr, topclass="Rtable1-grid Rtable1-shade Rtable1-times Rtable1-row")
+
+```
+
+# s110_HAITI
+arm: arm_primary
+
+```{r render 11 function, echo=FALSE}
+
+df_analysis_haiti <- df_analysis %>%
+  filter(study == "s110_HAITI") %>%
+  filter(!is.na(arm_primary)) %>%
+  mutate(arm_primary = factor(arm_primary, levels = c(0, 1), 
+                              labels = c("Control", "Intervention")),
+         tv_iwi_haiti = as.numeric(tv_iwi_haiti),
+         ref_iwi_haiti = as.numeric(ref_iwi_haiti),
+         phone_iwi_haiti = as.numeric(phone_iwi_haiti),
+         car_iwi_haiti = as.numeric(car_iwi_haiti),
+         bike_iwi_haiti = as.numeric(bike_iwi_haiti),
+         cheap_iwi_haiti = as.numeric(cheap_iwi_haiti),
+         expensive_iwi_haiti = as.numeric(expensive_iwi_haiti),
+         elec_iwi_haiti = as.numeric(elec_iwi_haiti))
+
+
+# custom render function for the variables
+rndr <- function(x, name, ...) {
+    if (!is.numeric(x)) return(render.categorical.default(x))
+    what <- switch(name,
+                   tv_iwi_haiti = "Mean (SD)",
+                   ref_iwi_haiti = "Mean (SD)",
+                   phone_iwi_haiti = "Mean (SD)",
+                   car_iwi_haiti = "Mean (SD)",
+                   bike_iwi_haiti = "Mean (SD)",
+                   cheap_iwi_haiti = "Mean (SD)",
+                   expensive_iwi_haiti = "Mean (SD)",
+                   elec_iwi_haiti = "Mean (SD)")
+                   
+                   parse.abbrev.render.code(c("", what))(x)
+}
+
+
+table1(~ tv_iwi_haiti +
+         ref_iwi_haiti + phone_iwi_haiti + car_iwi_haiti + bike_iwi_haiti +
+         cheap_iwi_haiti + expensive_iwi_haiti + elec_iwi_haiti + floormat_iwi_haiti +
+         room_iwi_haiti    | arm_primary, data = df_analysis_haiti, overall = F, rowlabelhead = "Asset variables", render = rndr, topclass="Rtable1-grid Rtable1-shade Rtable1-times Rtable1-row")
+
+```
+
+# s111_WASHB
+arm: arm_primary
+
+```{r render 12 function, echo=FALSE}
+
+df_analysis_washb <- df_analysis %>%
+  filter(study == "s111_WASHB") %>%
+  filter(!is.na(arm_primary)) %>%
+  mutate(arm_primary = factor(arm_primary, levels = c(0, 1), 
+                              labels = c("Control", "Intervention")),
+         tv_iwi_washb = as.numeric(tv_iwi_washb),
+         ref_iwi_washb = as.numeric(ref_iwi_washb),
+         phone_iwi_washb = as.numeric(phone_iwi_washb),
+         car_iwi_washb = as.numeric(car_iwi_washb),
+         bike_iwi_washb = as.numeric(bike_iwi_washb),
+         cheap_iwi_washb = as.numeric(cheap_iwi_washb),
+         expensive_iwi_washb = as.numeric(expensive_iwi_washb),
+         elec_iwi_washb = as.numeric(elec_iwi_washb))
+
+
+# custom render function for the variables
+rndr <- function(x, name, ...) {
+    if (!is.numeric(x)) return(render.categorical.default(x))
+    what <- switch(name,
+                   tv_iwi_washb = "Mean (SD)",
+                   ref_iwi_washb = "Mean (SD)",
+                   phone_iwi_washb = "Mean (SD)",
+                   car_iwi_washb = "Mean (SD)",
+                   bike_iwi_washb = "Mean (SD)",
+                   cheap_iwi_washb = "Mean (SD)",
+                   expensive_iwi_washb = "Mean (SD)",
+                   elec_iwi_washb = "Mean (SD)")
+                   
+                   parse.abbrev.render.code(c("", what))(x)
+}
+
+
+table1(~ tv_iwi_washb + ref_iwi_washb + phone_iwi_washb +
+         car_iwi_washb + bike_iwi_washb + cheap_iwi_washb + expensive_iwi_washb +
+         elec_iwi_washb + watersource_iwi_washb + floormat_iwi_washb +
+         toiletfac_iwi_washb     | arm_primary, data = df_analysis_washb, overall = F, rowlabelhead = "Asset variables", render = rndr, topclass="Rtable1-grid Rtable1-shade Rtable1-times Rtable1-row")
+
+
+```
+
+# s112_DOSE
+arm: arm_primary
+
+```{r render 13 function, echo=FALSE}
+
+df_analysis_dose <- df_analysis %>%
+  filter(study == "s112_DOSE") %>%
+  filter(!is.na(arm_primary)) %>%
+  mutate(arm_primary = factor(arm_primary, levels = c(0, 1), 
+                              labels = c("Control", "Intervention")),
+         ref_iwi_dose = as.numeric(ref_iwi_dose),
+         phone_iwi_dose = as.numeric(phone_iwi_dose),
+         car_iwi_dose = as.numeric(car_iwi_dose),
+         bike_iwi_dose = as.numeric(bike_iwi_dose),
+         cheap_iwi_dose = as.numeric(cheap_iwi_dose),
+         expensive_iwi_dose = as.numeric(expensive_iwi_dose),
+         elec_iwi_dose = as.numeric(elec_iwi_dose))
+
+
+# custom render function for the variables
+rndr <- function(x, name, ...) {
+    if (!is.numeric(x)) return(render.categorical.default(x))
+    what <- switch(name,
+                   ref_iwi_dose = "Mean (SD)",
+                   phone_iwi_dose = "Mean (SD)",
+                   car_iwi_dose = "Mean (SD)",
+                   bike_iwi_dose = "Mean (SD)",
+                   cheap_iwi_dose = "Mean (SD)",
+                   expensive_iwi_dose = "Mean (SD)",
+                   elec_iwi_dose = "Mean (SD)")
+                   
+                   parse.abbrev.render.code(c("", what))(x)
+}
+
+
+table1(~ ref_iwi_dose + phone_iwi_dose + car_iwi_dose +
+         bike_iwi_dose + cheap_iwi_dose + expensive_iwi_dose + elec_iwi_dose +
+         watersource_iwi_dose + toiletfac_iwi_dose + rooms_iwi_dose     | arm_primary, data = df_analysis_dose, overall = F, rowlabelhead = "Asset variables", render = rndr, topclass="Rtable1-grid Rtable1-shade Rtable1-times Rtable1-row")
+
+
+```
+
+
+# s113_WASHK
+arm_primary
+
+```{r render 15 function, echo=FALSE}
+
+df_analysis_washk <- df_analysis %>%
+  filter(study == "s113_WASHK") %>%
+  filter(!is.na(arm_primary)) %>%
+  mutate(arm_primary = factor(arm_primary, levels = c(0, 1), 
+                              labels = c("Control", "Intervention")),
+         tv_iwi_washk = as.numeric(tv_iwi_washk),
+         phone_iwi_washk = as.numeric(phone_iwi_washk),
+         car_iwi_washk = as.numeric(car_iwi_washk),
+         bike_iwi_washk = as.numeric(bike_iwi_washk),
+         cheap_iwi_washk = as.numeric(cheap_iwi_washk),
+         elec_iwi_washk = as.numeric(elec_iwi_washk))
+
+
+# custom render function for the variables
+rndr <- function(x, name, ...) {
+    if (!is.numeric(x)) return(render.categorical.default(x))
+    what <- switch(name,
+                   tv_iwi_washk = "Mean (SD)",
+                   phone_iwi_washk = "Mean (SD)",
+                   car_iwi_washk = "Mean (SD)",
+                   bike_iwi_washk = "Mean (SD)",
+                   cheap_iwi_washk = "Mean (SD)",
+                   elec_iwi_washk = "Mean (SD)")
+                   
+                   parse.abbrev.render.code(c("", what))(x)
+}
+
+
+table1(~ tv_iwi_washk + phone_iwi_washk + car_iwi_washk + bike_iwi_washk +
+         cheap_iwi_washk + elec_iwi_washk + floormat_iwi_washk + toiletfac_iwi_washk     | arm_primary, data = df_analysis_washk, overall = F, rowlabelhead = "Asset variables", render = rndr, topclass="Rtable1-grid Rtable1-shade Rtable1-times Rtable1-row")
+
+```
+
+
+# s114_SHINE_HIV+
+arm: arm_primary
+no asset variables yet
+
+
+# s116_MAHAY
+arm: arm_primary
+
+```{r render 16 function, echo=FALSE}
+
+df_analysis_mahay <- df_analysis %>%
+  filter(study == "s116_MAHAY") %>%
+  filter(!is.na(arm_primary)) %>%
+  mutate(arm_primary = factor(arm_primary, levels = c(0, 1), 
+                              labels = c("Control", "Intervention")),
+         tv_iwi_mahay = as.numeric(tv_iwi_mahay),
+         ref_iwi_mahay = as.numeric(ref_iwi_mahay),
+         phone_iwi_mahay = as.numeric(phone_iwi_mahay),
+         car_iwi_mahay = as.numeric(car_iwi_mahay),
+         bike_iwi_mahay = as.numeric(bike_iwi_mahay),
+         cheap_iwi_mahay = as.numeric(cheap_iwi_mahay),
+         expensive_iwi_mahay = as.numeric(expensive_iwi_mahay),
+         elec_iwi_mahay = as.numeric(elec_iwi_mahay))
+
+
+# custom render function for the variables
+rndr <- function(x, name, ...) {
+    if (!is.numeric(x)) return(render.categorical.default(x))
+    what <- switch(name,
+                   tv_iwi_mahay = "Mean (SD)",
+                   ref_iwi_mahay = "Mean (SD)",
+                   phone_iwi_mahay = "Mean (SD)",
+                   car_iwi_mahay = "Mean (SD)",
+                   bike_iwi_mahay = "Mean (SD)",
+                   cheap_iwi_mahay = "Mean (SD)",
+                   expensive_iwi_mahay = "Mean (SD)",
+                   elec_iwi_mahay = "Mean (SD)")
+                   
+                   parse.abbrev.render.code(c("", what))(x)
+}
+
+
+table1(~ tv_iwi_mahay + ref_iwi_mahay + phone_iwi_mahay + car_iwi_mahay + 
+         bike_iwi_mahay + cheap_iwi_mahay + expensive_iwi_mahay + elec_iwi_mahay +
+         watersource_iwi_mahay + floormat_iwi_mahay + toiletfac_iwi_mahay     | arm_primary, data = df_analysis_mahay, overall = F, rowlabelhead = "Asset variables", render = rndr, topclass="Rtable1-grid Rtable1-shade Rtable1-times Rtable1-row")
+
+
+
+```
+
+
+# Session Info
+```{r session info}
+sessionInfo()
+```
+

@@ -1,0 +1,217 @@
+---
+title: "Absolute treatment effect by Pointwise meta-analysis"
+author: "Pearl Ante-Testard"
+date: "`r Sys.Date()`"
+output: pdf_document
+  #officedown::rdocx_document
+   # theme: default
+    #highlight: default
+    #code_folding: hide
+    #toc: true
+    #toc_depth: 3
+    #toc_float:
+      #collapsed: true
+      #smooth_scroll: true
+knit: (function(inputFile, encoding) {
+        rmarkdown::render(inputFile, 
+                          encoding   = encoding, 
+                          output_dir = here::here("output")
+                          )})
+---
+
+```{r clean environment, echo=FALSE}
+
+rm(list=ls(all=TRUE))
+
+```
+
+```{r packages and functions, echo = TRUE, warning = FALSE}
+
+source(here::here("R", "0-config.R"))
+
+render(here::here("R", "gam-meta-analysis",
+                  "pointwise-pooled-laz-arm-maternal.Rmd"))
+render(here::here("R", "gam-meta-analysis",
+                  "pointwise-pooled-wlz-arm-maternal.Rmd"))
+render(here::here("R", "gam-meta-analysis",
+                  "pointwise-pooled-stunted-arm-maternal.Rmd"))
+render(here::here("R", "gam-meta-analysis",
+                  "pointwise-pooled-wasted-arm-maternal.Rmd"))
+render(here::here("R", "gam-meta-analysis",
+                  "pointwise-pooled-language-arm-maternal.Rmd"))
+render(here::here("R", "gam-meta-analysis",
+                  "pointwise-pooled-gross-motor-arm-maternal.Rmd"))
+render(here::here("R", "gam-meta-analysis",
+                  "pointwise-pooled-fine-motor-arm-maternal.Rmd"))
+render(here::here("R", "gam-meta-analysis",
+                  "pointwise-pooled-executive-function-arm-maternal.Rmd"))
+render(here::here("R", "gam-meta-analysis",
+                  "pointwise-pooled-socioemotional-score-arm-maternal.Rmd"))
+render(here::here("R", "gam-meta-analysis",
+                  "pointwise-pooled-hemoglobin-arm-maternal.Rmd"))
+render(here::here("R", "gam-meta-analysis",
+                  "pointwise-pooled-anemia-arm-maternal.Rmd"))
+render(here::here("R", "gam-meta-analysis",
+                  "pointwise-pooled-severe-stunted-arm-maternal.Rmd"))
+```
+
+
+```{r 1, echo=FALSE}
+
+
+point.wise.DF.SS.Comb.plot_laz <- point.wise.DF.SS.Comb.plot_laz +
+  theme(legend.position = c(0.40, 0.85)) + ylim(-2.5, 0.1)
+point.wise.DF.SS.Comb.diff.plot_laz <- point.wise.DF.SS.Comb.diff.plot_laz +
+  ylim(-0.15, 0.25)
+plot_comp_effect_laz <- plot_grid(point.wise.DF.SS.Comb.plot_laz, point.wise.DF.SS.Comb.diff.plot_laz, ncol = 1)
+
+point.wise.DF.SS.Comb.plot_wlz <- point.wise.DF.SS.Comb.plot_wlz +
+  theme(legend.position = "none") + ylim(-2.5, 0.1)
+point.wise.DF.SS.Comb.diff.plot_wlz <- point.wise.DF.SS.Comb.diff.plot_wlz +
+  ylim(-0.15, 0.25)
+plot_comp_effect_wlz <- plot_grid(point.wise.DF.SS.Comb.plot_wlz, point.wise.DF.SS.Comb.diff.plot_wlz, ncol = 1)
+
+point.wise.DF.SS.Comb.plot_stunted <- point.wise.DF.SS.Comb.plot_stunted +
+  theme(legend.position = "none") + ylim(0, 0.6)
+point.wise.DF.SS.Comb.diff.plot_stunted <- point.wise.DF.SS.Comb.diff.plot_stunted +
+  ylim(-0.15, 0.25)
+plot_comp_effect_stunted <- plot_grid(point.wise.DF.SS.Comb.plot_stunted, point.wise.DF.SS.Comb.diff.plot_stunted, ncol = 1)
+
+point.wise.DF.SS.Comb.plot_wasted <- point.wise.DF.SS.Comb.plot_wasted +
+  theme(legend.position = "none") + ylim(0, 0.6)
+point.wise.DF.SS.Comb.diff.plot_wasted <- point.wise.DF.SS.Comb.diff.plot_wasted +
+   ylim(-0.15, 0.25)
+plot_comp_effect_wasted <- plot_grid(point.wise.DF.SS.Comb.plot_wasted, point.wise.DF.SS.Comb.diff.plot_wasted, ncol = 1)
+
+point.wise.DF.SS.Comb.plot_severe_stunted <- point.wise.DF.SS.Comb.plot_severe_stunted +
+  theme(legend.position = "none") + ylim(0, 0.6)
+point.wise.DF.SS.Comb.diff.plot_severe_stunted <- point.wise.DF.SS.Comb.diff.plot_severe_stunted +
+   ylim(-0.15, 0.25)
+plot_comp_effect_severe_stunted <- plot_grid(point.wise.DF.SS.Comb.plot_severe_stunted, point.wise.DF.SS.Comb.diff.plot_severe_stunted, ncol = 1)
+
+plot_composite_growth <- plot_grid(plot_comp_effect_laz, plot_comp_effect_wlz,
+                                   plot_comp_effect_stunted, plot_comp_effect_wasted,
+                                   plot_comp_effect_severe_stunted, ncol=5,
+                                   labels = c("A", "B", "C", "D", "E")) 
+plot_composite_growth
+
+# Add a vertical line to separate plot A and B from plot C, D, and E
+plot_composite_growth <- ggdraw(plot_composite_growth) +
+  draw_line(x = 0.4, y = c(0, 1), color = "black", size = 1)
+
+plot_composite_growth
+
+```
+
+```{r 2, echo=FALSE}
+
+# Save the plot
+ggsave(here::here("output", "gam_pooled_pointwise_growth_arm_maternal.png"),
+       plot = plot_composite_growth, width = 19, height = 17, dpi = 300)
+
+```
+
+
+```{r 3, echo=FALSE}
+
+point.wise.DF.SS.Comb.plot_language <- point.wise.DF.SS.Comb.plot_language +
+  theme(legend.position = c(0.40, 0.85)) + ylim(-0.5, 0.5)
+point.wise.DF.SS.Comb.diff.plot_language <- point.wise.DF.SS.Comb.diff.plot_language + 
+  ylim(-0.4, 0.4)
+plot_comp_effect_language <- plot_grid(point.wise.DF.SS.Comb.plot_language, point.wise.DF.SS.Comb.diff.plot_language, ncol = 1)
+
+point.wise.DF.SS.Comb.plot_gross <- point.wise.DF.SS.Comb.plot_gross +
+  theme(legend.position = "none") + ylim(-0.5, 0.5)
+point.wise.DF.SS.Comb.diff.plot_gross <- point.wise.DF.SS.Comb.diff.plot_gross + 
+  ylim(-0.4, 0.4)
+plot_comp_effect_gross <- plot_grid(point.wise.DF.SS.Comb.plot_gross, point.wise.DF.SS.Comb.diff.plot_gross, ncol = 1)
+
+point.wise.DF.SS.Comb.plot_fine <- point.wise.DF.SS.Comb.plot_fine +
+  theme(legend.position = "none") + ylim(-0.5, 0.5)
+point.wise.DF.SS.Comb.diff.plot_fine <- point.wise.DF.SS.Comb.diff.plot_fine + 
+  ylim(-0.4, 0.4)
+plot_comp_effect_fine <- plot_grid(point.wise.DF.SS.Comb.plot_fine, point.wise.DF.SS.Comb.diff.plot_fine, ncol = 1)
+
+point.wise.DF.SS.Comb.plot_exec <- point.wise.DF.SS.Comb.plot_exec +
+  theme(legend.position = "none") + ylim(-0.5, 0.5)
+point.wise.DF.SS.Comb.diff.plot_exec <- point.wise.DF.SS.Comb.diff.plot_exec + 
+  ylim(-0.4, 0.4)
+plot_comp_effect_exec <- plot_grid(point.wise.DF.SS.Comb.plot_exec, point.wise.DF.SS.Comb.diff.plot_exec, ncol = 1)
+
+point.wise.DF.SS.Comb.plot_socioemo <- point.wise.DF.SS.Comb.plot_socioemo +
+  theme(legend.position = "none") + ylim(-0.5, 0.5)
+point.wise.DF.SS.Comb.diff.plot_socioemo <- point.wise.DF.SS.Comb.diff.plot_socioemo + 
+  ylim(-0.4, 0.4)
+plot_comp_effect_socioemo <- plot_grid(point.wise.DF.SS.Comb.plot_socioemo, point.wise.DF.SS.Comb.diff.plot_socioemo, ncol = 1)
+
+plot_composite_development <- plot_grid(plot_comp_effect_language, 
+                                        plot_comp_effect_gross,
+                                        plot_comp_effect_fine, 
+                                        plot_comp_effect_exec,
+                                        plot_comp_effect_socioemo, ncol=5,
+                                        labels = c("A", "B", "C", "D", "E")) 
+plot_composite_development
+
+```
+
+```{r 4, echo=FALSE}
+
+# Save the plot
+ggsave(here::here("output", "gam_pooled_pointwise_development_arm_maternal.png"),
+       plot = plot_composite_development, width = 19, height = 17, dpi = 300)
+
+
+```
+
+```{r 5, echo=FALSE}
+
+point.wise.DF.SS.Comb.plot_hgb <- point.wise.DF.SS.Comb.plot_hgb +
+  theme(legend.position = c(0.30, 0.35)) + ylim(80,120)
+point.wise.DF.SS.Comb.diff.plot_hgb <- point.wise.DF.SS.Comb.diff.plot_hgb +
+  ylim(0, 8)
+plot_comp_effect_hgb <- plot_grid(point.wise.DF.SS.Comb.plot_hgb, point.wise.DF.SS.Comb.diff.plot_hgb, ncol = 1)
+
+point.wise.DF.SS.Comb.plot_anemia <- point.wise.DF.SS.Comb.plot_anemia +
+  theme(legend.position = "none") + ylim(0.0,1.0)
+point.wise.DF.SS.Comb.diff.plot_anemia <- point.wise.DF.SS.Comb.diff.plot_anemia +
+  ylim(-0.2, 0.2)
+plot_comp_effect_anemia <- plot_grid(point.wise.DF.SS.Comb.plot_anemia, point.wise.DF.SS.Comb.diff.plot_anemia, ncol = 1)
+
+plot_composite_blood <- plot_grid(plot_comp_effect_hgb, plot_comp_effect_anemia, ncol=2,
+                                   labels = c("A", "B"))
+plot_composite_blood
+
+# Add a vertical line to separate plot A and B from plot C, D, and E
+plot_composite_blood <- ggdraw(plot_composite_blood) +
+  draw_line(x = 0.5, y = c(0, 1), color = "black", size = 1)
+
+plot_composite_blood
+
+```
+
+```{r 6, echo=FALSE}
+
+# Save the plot
+ggsave(here::here("output", "gam_pooled_pointwise_blood_arm_maternal.png"),
+       plot = plot_composite_blood, width = 10, height = 10, dpi = 300)
+
+```
+
+```{r 7, echo=FALSE}
+
+plot_combined_all <- plot_grid(plot_composite_growth, plot_composite_development,
+                               plot_composite_blood, nrow=3,
+                               labels = c("Growth", "Development", "Anemia"))
+
+plot_combined_all
+
+```
+
+```{r 8, echo=FALSE}
+
+# Save the plot
+ggsave(here::here("output", "gam_pooled_pointwise_all_arm_maternal.png"),
+       plot = plot_combined_all, width = 24, height = 22, dpi = 300)
+
+```
+

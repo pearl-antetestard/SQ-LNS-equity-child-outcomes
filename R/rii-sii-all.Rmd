@@ -1,0 +1,86 @@
+---
+title: "Pooled RII and SII - binary outcomes"
+author: "Pearl Ante-Testard"
+date: "`r Sys.Date()`"
+output: pdf_document
+knit: (function(inputFile, encoding) {
+        rmarkdown::render(inputFile, 
+                          encoding   = encoding, 
+                          output_dir = here::here("output")
+                          )})
+---
+
+```{r clean environment, echo=FALSE}
+
+rm(list=ls(all=TRUE))
+
+```
+
+```{r packages and functions, echo = TRUE, warning = FALSE}
+
+source(here::here("R", "0-config.R"))
+
+render(here::here("R", "rii-sii-ineq",
+                  "rii-sii-ineq-stunted.Rmd"))
+render(here::here("R", "rii-sii-ineq",
+                  "rii-sii-ineq-wasted.Rmd"))
+render(here::here("R", "rii-sii-ineq",
+                  "rii-sii-ineq-severe-stunted.Rmd"))
+render(here::here("R", "rii-sii-ineq",
+                  "rii-sii-ineq-anemia.Rmd"))
+```
+
+```{r rii plots, echo=FALSE}
+
+a <- meta_rii_stunted + ylim(0, 3) + labs(tag = "A") 
+b <- meta_rii_wasted + ylim(0, 3)
+c <- meta_rii_severe_stunted + ylim(0, 3)
+d <- meta_rii_anemia + ylim(0, 3)
+
+rii <- a / b/ c / d
+
+rii
+
+```
+
+```{r sii plots, echo=FALSE}
+
+e <- meta_sii_stunted + ylim(-10, 20) + labs(tag = "B") 
+f <- meta_sii_wasted + ylim(-10, 20)
+g <- meta_sii_severe_stunted + ylim(-10, 20)
+h <- meta_sii_anemia + ylim(-10, 20)
+
+sii <- e / f / g / h
+
+sii
+
+```
+
+```{r rii sii, echo=FALSE}
+
+ae <- a + e 
+bf <- b + f
+cg <- c + g
+dh <- d + h
+
+all_plot <- ae / bf / cg / dh
+all_plot
+
+```
+
+
+```{r save plots, echo=FALSE}
+
+#ggsave(here::here("output", "rii-ineq.png"), rii, width = 6, height = 8, dpi = 300)
+#ggsave(here::here("output", "sii-ineq.png"), sii, width = 6, height = 8, dpi = 300)
+ggsave(here::here("output", "rii-sii-ineq.png"), all_plot, width = 6, height = 7, dpi = 300)
+
+```
+
+
+## Session info
+```{r session info}
+
+sessionInfo()
+
+```

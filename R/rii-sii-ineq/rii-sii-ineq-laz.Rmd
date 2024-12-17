@@ -1,0 +1,524 @@
+---
+title: "Measuring inequalities: RII and SII - LAZ"
+author: "Pearl Ante-Testard"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: default
+    highlight: default
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float:
+      collapsed: true
+      smooth_scroll: true
+knit: (function(inputFile, encoding) {
+        rmarkdown::render(inputFile, 
+                          encoding   = encoding, 
+                          output_dir = here::here("output")
+                          )})
+---
+
+```{r clean environment, echo=FALSE}
+
+#rm(list=ls(all=TRUE))
+```
+
+```{r configuration, message=FALSE}
+
+source(here::here("R", "0-config.R"))
+
+```
+
+
+```{r data, message=FALSE}
+
+# Load the data
+df_analysis_laz <- readRDS(file = here::here("data", "1-final", "df_analysis_iwi.rds")) %>% 
+  dplyr::mutate(study = sub("s[0-9]*_", "", study.x)) %>%
+  select(study, pid, region, cluster, arms_maternal, iwi, laz_el) %>% 
+  dplyr::filter(!is.na(iwi)) %>%
+  dplyr::filter(!is.na(arms_maternal)) %>%
+  dplyr::filter(!is.na(laz_el)) %>%
+  dplyr::mutate(
+    arms_maternal = factor(arms_maternal, levels = c(0, 1), labels = c("Control", "SQ-LNS")),
+    iwi = as.numeric(iwi),
+    cluster = factor(cluster),
+    laz_el = as.numeric(laz_el),
+    iwi_decile = ntile(iwi, 10)
+  )
+
+# Calculate the ECDF for iwi_decile
+ecdf_iwi_decile <- ecdf(df_analysis_laz$iwi_decile)
+
+# Apply the ECDF to get the relative rank
+df_analysis_laz <- df_analysis_laz %>%
+  mutate(iwi_relative_rank = ecdf_iwi_decile(iwi_decile))
+
+# Print the data frame with the new relative rank column
+print(df_analysis_laz)
+
+```
+
+
+## RII and SII estimates from the glm model
+
+Here, used iwi in the model.
+
+RII > 1 or SII > 0: laz_el is higher among the poor than the rich; 
+RII = 1 or SII = 0: no inequality
+
+```{r RII and SII}
+
+ineq <- df_analysis_laz %>%
+  split(.$study) %>%
+  map_dfr(function(df_analysis_laz) {
+    study_name <- unique(df_analysis_laz$study)
+    results <- list()
+    
+    if (study_name %in% c("DOSE", "GHANA", "HAITI", "DYADG", "DYADM")) {
+      # Control group
+      df_control <- df_analysis_laz %>% filter(arms_maternal == "Control")
+      #min_laz_el <- min(df_control$laz_el)
+
+      #df_control$Y_shifted <- df_control$laz_el + abs(min_laz_el) + 1
+
+      #glm_c <- glm(Y_shifted ~ iwi_relative_rank, family = gaussian(link = "log"), 
+       #            data = df_control)
+      lm_c <- lm_robust(laz_el ~ iwi_relative_rank, data = df_control) 
+      
+      #p.low <- predict(lm_c, data.frame(iwi_relative_rank = 0), se.fit = TRUE)
+      #p.high <- predict(lm_c, data.frame(iwi_relative_rank = 1), se.fit = TRUE)
+      
+      #set.seed(123)  # For reproducibility
+      #n_sim <- 10000  # Number of simulations
+
+      # Simulate predictions using their mean and standard error
+      #sim.low <- rnorm(n_sim, mean = p.low$fit, sd = p.low$se.fit)
+      #sim.high <- rnorm(n_sim, mean = p.high$fit, sd = p.high$se.fit)
+
+      # Calculate RII for each simulation
+      #sim.RII <- sim.high / sim.low
+
+      # Calculate the 95% confidence interval
+      #RII_CI <- quantile(sim.RII, probs = c(0.025, 0.975))
+      #RII_low <- RII_CI[1]
+      #RII_up <- RII_CI[2]
+
+      # Calculate RII
+      #RII_lm_c <-  p.high$fit / p.low$fit
+      #RII_lm_c <-  (coef(lm_c)[1] + coef(lm_c)[2]) / coef(lm_c)[1]
+      RII_lm_c <-  coef(lm_c)[2] / mean(df_control$laz_el)
+      var_rii <- summary(lm_c)$coefficients[2, "Std. Error"]^2/mean(df_control$laz_el)^2
+      se_rii <- sqrt(var_rii)
+      z <- 1.96  # 95% CI multiplier for normal distribution
+      RII_low <- RII_lm_c - z * se_rii
+      RII_up <- RII_lm_c + z * se_rii
+
+      # Calculate SII
+      SII_lm_c <- coef(lm_c)[[2]]
+      se_sii <- summary(lm_c)$coefficients[2, "Std. Error"]
+      z <- 1.96  # 95% CI multiplier for normal distribution
+      SII_low <- SII_lm_c - z * se_sii
+      SII_up <- SII_lm_c + z * se_sii
+
+      results$control <- list(RII = RII_lm_c, RII_low = RII_low, RII_up = RII_up,
+                              SII = SII_lm_c, SII_low = SII_low, SII_up = SII_up)
+      
+      # Intervention group
+      df_interv <- df_analysis_laz %>% filter(arms_maternal == "SQ-LNS")
+      lm_i <- lm_robust(laz_el ~ iwi_relative_rank, data = df_interv) 
+      
+      #p.low <- predict(lm_i, data.frame(iwi_relative_rank = 0), se.fit = TRUE)
+      #p.high <- predict(lm_i, data.frame(iwi_relative_rank = 1), se.fit = TRUE)
+      
+      #set.seed(123)  # For reproducibility
+      #n_sim <- 10000  # Number of simulations
+
+      # Simulate predictions using their mean and standard error
+      #sim.low <- rnorm(n_sim, mean = p.low$fit, sd = p.low$se.fit)
+      #sim.high <- rnorm(n_sim, mean = p.high$fit, sd = p.high$se.fit)
+
+      # Calculate RII for each simulation
+      #sim.RII <- sim.high / sim.low 
+
+      # Calculate the 95% confidence interval
+      #RII_CI <- quantile(sim.RII, probs = c(0.025, 0.975))
+      #RII_low_i <- RII_CI[1]
+      #RII_up_i <- RII_CI[2]
+
+      # Calculate RII
+      #RII_lm_i <- p.high$fit / p.low$fit 
+      #RII_lm_i <-  (coef(lm_i)[1] + coef(lm_i)[2]) / coef(lm_i)[1]
+      #se_rii <- summary(lm_i)$coefficients[2, "Std. Error"]
+      RII_lm_i <-  coef(lm_i)[2] / mean(df_interv$laz_el)
+      var_rii <- summary(lm_i)$coefficients[2, "Std. Error"]^2/mean(df_interv$laz_el)^2
+      se_rii <- sqrt(var_rii)
+      z <- 1.96  # 95% CI multiplier for normal distribution
+      RII_low_i <- RII_lm_i - z * se_rii
+      RII_up_i <- RII_lm_i + z * se_rii
+
+      # Calculate SII
+      SII_lm_i <- coef(lm_i)[[2]]
+      se_sii_i <- summary(lm_i)$coefficients[2, "Std. Error"]
+      SII_low_i <- SII_lm_i - z * se_sii_i
+      SII_up_i <- SII_lm_i + z * se_sii_i
+
+      results$intervention <- list(RII = RII_lm_i, RII_low = RII_low_i, RII_up = RII_up_i,
+                                   SII = SII_lm_i, SII_low = SII_low_i, SII_up = SII_up_i)
+      
+    } else {
+      # Control group
+      df_control <- df_analysis_laz %>% filter(arms_maternal == "Control")
+      lm_c <- lm_robust(laz_el ~ iwi_relative_rank, clusters = cluster, data = df_control) 
+      
+      #p.low <- predict(lm_c, data.frame(iwi_relative_rank = 0), se.fit = TRUE)
+      #p.high <- predict(lm_c, data.frame(iwi_relative_rank = 1), se.fit = TRUE)
+      
+      #set.seed(123)  # For reproducibility
+      #n_sim <- 10000  # Number of simulations
+
+      # Simulate predictions using their mean and standard error
+      #sim.low <- rnorm(n_sim, mean = p.low$fit, sd = p.low$se.fit)
+      #sim.high <- rnorm(n_sim, mean = p.high$fit, sd = p.high$se.fit)
+
+      # Calculate RII for each simulation
+      #sim.RII <-  sim.high / sim.low
+
+      # Calculate the 95% confidence interval
+      #RII_CI <- quantile(sim.RII, probs = c(0.025, 0.975))
+      #RII_low <- RII_CI[1]
+      #RII_up <- RII_CI[2]
+
+      # Calculate RII
+      #RII_lm_c <- p.high$fit / p.low$fit 
+      #RII_lm_c <-  (coef(lm_c)[1] + coef(lm_c)[2]) / coef(lm_c)[1]
+      #se_rii <- summary(lm_c)$coefficients[2, "Std. Error"]
+      RII_lm_c <-  coef(lm_c)[2] / mean(df_control$laz_el)
+      var_rii <- summary(lm_c)$coefficients[2, "Std. Error"]^2/mean(df_control$laz_el)^2
+      se_rii <- sqrt(var_rii)
+      z <- 1.96  # 95% CI multiplier for normal distribution
+      RII_low <- RII_lm_c - z * se_rii
+      RII_up <- RII_lm_c + z * se_rii
+
+      # Calculate SII
+      SII_lm_c <- coef(lm_c)[[2]]
+      se_sii <- summary(lm_c)$coefficients[2, "Std. Error"]
+      z <- 1.96  # 95% CI multiplier for normal distribution
+      SII_low <- SII_lm_c - z * se_sii
+      SII_up <- SII_lm_c + z * se_sii
+
+      results$control <- list(RII = RII_lm_c, RII_low = RII_low, RII_up = RII_up,
+                              SII = SII_lm_c, SII_low = SII_low, SII_up = SII_up)
+      
+      # Intervention group
+      df_interv <- df_analysis_laz %>% filter(arms_maternal == "SQ-LNS")
+      lm_i <- lm_robust(laz_el ~ iwi_relative_rank, clusters = cluster, data = df_interv) 
+      
+      #p.low <- predict(lm_i, data.frame(iwi_relative_rank = 0), se.fit = TRUE)
+      #p.high <- predict(lm_i, data.frame(iwi_relative_rank = 1), se.fit = TRUE)
+      
+      #set.seed(123)  # For reproducibility
+      #n_sim <- 10000  # Number of simulations
+
+      # Simulate predictions using their mean and standard error
+      #sim.low <- rnorm(n_sim, mean = p.low$fit, sd = p.low$se.fit)
+      #sim.high <- rnorm(n_sim, mean = p.high$fit, sd = p.high$se.fit)
+
+      # Calculate RII for each simulation
+      #sim.RII <- sim.high / sim.low 
+
+      # Calculate the 95% confidence interval
+      #RII_CI <- quantile(sim.RII, probs = c(0.025, 0.975))
+      #RII_low_i <- RII_CI[1]
+      #RII_up_i <- RII_CI[2]
+
+      # Calculate RII
+      #RII_lm_i <- p.high$fit / p.low$fit 
+      RII_lm_i <-  coef(lm_i)[2] / mean(df_interv$laz_el)
+      var_rii <- summary(lm_i)$coefficients[2, "Std. Error"]^2/mean(df_interv$laz_el)^2
+      se_rii <- sqrt(var_rii)
+      z <- 1.96  # 95% CI multiplier for normal distribution
+      RII_low_i <- RII_lm_i - z * se_rii
+      RII_up_i <- RII_lm_i + z * se_rii
+
+      # Calculate SII
+      SII_lm_i <- coef(lm_i)[[2]]
+      se_sii_i <- summary(lm_i)$coefficients[2, "Std. Error"]
+      SII_low_i <- SII_lm_i - z * se_sii_i
+      SII_up_i <- SII_lm_i + z * se_sii_i
+
+      results$intervention <- list(RII = RII_lm_i, RII_low = RII_low_i, RII_up = RII_up_i,
+                                   SII = SII_lm_i, SII_low = SII_low_i, SII_up = SII_up_i)
+    }
+    
+    # Create a data frame with the results
+    ineq_tab <- data.frame(
+      study = study_name,
+      RII_control = round(results$control$RII, 3),
+      RII_low_control = round(results$control$RII_low, 3),
+      RII_up_control = round(results$control$RII_up, 3),
+      SII_control = round(results$control$SII, 3),
+      SII_low_control = round(results$control$SII_low, 3),
+      SII_up_control = round(results$control$SII_up, 3),
+      RII_intervention = round(results$intervention$RII, 3),
+      RII_low_intervention = round(results$intervention$RII_low, 3),
+      RII_up_intervention = round(results$intervention$RII_up, 3),
+      SII_intervention = round(results$intervention$SII, 3),
+      SII_low_intervention = round(results$intervention$SII_low, 3),
+      SII_up_intervention = round(results$intervention$SII_up, 3)
+    )
+    
+    return(ineq_tab)
+  })
+
+print(ineq)
+
+
+```
+
+
+```{r prev}
+
+# Calculate the prevalence of laz_el by study
+prevalence_values_laz <- df_analysis_laz %>%
+  group_by(study, arms_maternal) %>%
+  summarise(
+    prevalence_laz_el = mean(laz_el == 1, na.rm = TRUE),
+    sd_laz_el = sd(laz_el == 1, na.rm = TRUE)
+  ) 
+
+# Calculate the overall prevalence of laz_el by study
+overall_prevalence_laz <- df_analysis_laz %>%
+  group_by(study) %>%
+  summarise(
+    prevalence_laz_el = mean(laz_el == 1, na.rm = TRUE),  # Calculate the prevalence
+    sd_laz_el = sd(laz_el == 1, na.rm = TRUE)
+  )
+
+
+```
+
+## Meta-analysis
+
+```{r prepare data prev}
+
+df_sqlns <- subset(prevalence_values_laz, (arms_maternal %in% c("SQ-LNS"))) 
+colnames(df_sqlns) <- c("study", "arms_maternal", "prevalence_laz_el_sqlns",
+                        "sd_laz_el_sqlns")
+df_control <- subset(prevalence_values_laz, (arms_maternal %in% c("Control")))
+colnames(df_control) <- c("study", "arms_maternal", "prevalence_laz_el_control",
+                        "sd_laz_el_control")
+df <- left_join(ineq, df_sqlns, by = "study") 
+df <- left_join(df, df_control, by = "study")
+df <- left_join(df, overall_prevalence_laz, by = "study")
+
+tau.method <- "REML" 
+options(scipen = 999)
+```
+
+
+```{r meta-analysis RII control}
+
+### RII control
+meta1 <- metagen(TE = df$RII_control, lower = df$RII_low_control, upper =  df$RII_up_control, method.tau = tau.method, hakn = F, #func.backtransf = exp,
+                 studlab = df$study, prediction = TRUE)
+summary(meta1)
+forest(meta1, 
+       layout = "JAMA", 
+       leftlabs = c("Study", "RII control [95% CI]"),
+       label.right = "Pro-rich", 
+       label.left = "Pro-poor")
+
+RII_control <- c(meta1$TE.random, meta1$upper.random, meta1$lower.random, meta1$seTE.random, meta1$Q, meta1$df.Q, meta1$I2, meta1$tau2)
+RII_control_df <- as.data.frame(RII_control)
+RII_control_df$meta <- c("RE.meta", "RE.meta.upper", "RE.meta.lower", "RE.se",
+                              "RE.Q", "RE.df", "RE.I2", "RE.tau2")
+
+RII_control_df_wide <- RII_control_df %>%
+  pivot_wider(names_from = meta, values_from = RII_control) 
+RII_control_df_wide$arm <- "Control"
+```
+
+```{r meta-analysis RII intervention}
+
+### RII intervention
+meta2 <- metagen(TE = df$RII_intervention, lower = df$RII_low_intervention, upper =  df$RII_up_intervention, method.tau = tau.method, hakn = F, 
+                 #func.backtransf = exp, 
+                 studlab = df$study, prediction = TRUE)
+summary(meta2)
+forest(meta2, 
+       layout = "JAMA", 
+       leftlabs = c("Study", "RII SQ-LNS [95% CI]"),
+       label.right = "Pro-rich", 
+       label.left = "Pro-poor")
+
+RII_intervention <- c(meta2$TE.random, meta2$upper.random, meta2$lower.random, meta2$seTE.random, meta2$Q, meta2$df.Q, meta2$I2, meta2$tau2)
+RII_intervention_df <- as.data.frame(RII_intervention)
+RII_intervention_df$meta <- c("RE.meta", "RE.meta.upper", "RE.meta.lower", "RE.se",
+                                   "RE.Q", "RE.df", "RE.I2", "RE.tau2")
+
+RII_intervention_df_wide <- RII_intervention_df %>%
+  pivot_wider(names_from = meta, values_from = RII_intervention)
+RII_intervention_df_wide$arm <- "SQ-LNS"
+```
+
+```{r meta-analysis SII control}
+
+### SII control
+meta3 <- metagen(TE = df$SII_control, lower = df$SII_low_control, upper =  df$SII_up_control, method.tau = tau.method, hakn = F,  pscale = 100,
+                 studlab = df$study, prediction = TRUE)
+summary(meta3)
+forest(meta3, 
+       layout = "JAMA", 
+       leftlabs = c("Study", "SII %-points control [95% CI]"),
+       label.right = "Pro-rich", 
+       label.left = "Pro-poor")
+
+SII_control <- c(meta3$TE.random, meta3$upper.random, meta3$lower.random, meta3$seTE.random, meta3$Q, meta3$df.Q, meta3$I2, meta3$tau2)
+SII_control_df <- as.data.frame(SII_control)
+SII_control_df$meta <- c("RE.meta", "RE.meta.upper", "RE.meta.lower", "RE.se",
+                               "RE.Q", "RE.df", "RE.I2", "RE.tau2")
+
+SII_control_df_wide <- SII_control_df %>%
+  pivot_wider(names_from = meta, values_from = SII_control)
+SII_control_df_wide$arm <- "Control"
+```
+
+```{r meta-analysis SII intervention}
+
+### SII intervention
+meta4 <- metagen(TE = df$SII_intervention, lower = df$SII_low_intervention, upper =  df$SII_up_intervention, method.tau = tau.method, hakn = F, pscale = 100,
+                 studlab = df$study, prediction = TRUE)
+summary(meta4)
+forest(meta4, 
+       layout = "JAMA", 
+       leftlabs = c("Study", "SII %-points SQ-LNS [95% CI]"),
+       label.right = "Pro-rich", 
+       label.left = "Pro-poor")
+
+SII_intervention <- c(meta4$TE.random, meta4$upper.random, meta4$lower.random, meta4$seTE.random, meta4$Q, meta4$df.Q, meta4$I2, meta4$tau2)
+SII_intervention_df <- as.data.frame(SII_intervention)
+SII_intervention_df$meta <- c("RE.meta", "RE.meta.upper", "RE.meta.lower", "RE.se",
+                                   "RE.Q", "RE.df", "RE.I2", "RE.tau2")
+
+SII_intervention_df_wide <- SII_intervention_df %>%
+  pivot_wider(names_from = meta, values_from = SII_intervention)
+SII_intervention_df_wide$arm <- "SQ-LNS"
+```
+
+```{r meta-analysis prevalence}
+
+### Prevalence SQ-LNS
+meta5 <- metagen(TE = df$prevalence_laz_el_sqlns, seTE = df$sd_laz_el_sqlns, 
+                 method.tau = tau.method, studlab = df$study,
+                 hakn = F, pscale = 100, prediction = TRUE)
+summary(meta5)
+forest(meta5, 
+       layout = "JAMA", 
+       leftlabs = c("Study", "Prevalence, SQ-LNS, [95% CI]"))
+
+prevalence_sqlns <- c(meta5$TE.random, meta5$upper.random, meta5$lower.random, meta5$seTE.random, meta5$Q, meta5$df.Q, meta5$I2, meta5$tau2)
+prevalence_sqlns_df <- as.data.frame(prevalence_sqlns)
+prevalence_sqlns_df$meta <- c("RE.meta", "RE.meta.upper", "RE.meta.lower", "RE.se",
+                              "RE.Q", "RE.df", "RE.I2", "RE.tau2")
+
+prevalence_sqlns_df_wide <- prevalence_sqlns_df %>%
+  pivot_wider(names_from = meta, values_from = prevalence_sqlns)
+prevalence_sqlns_df_wide$arm <- "SQ-LNS"
+```
+
+```{r meta-analysis prevalence control}
+
+### Prevalence control
+meta6 <- metagen(TE = df$prevalence_laz_el_control, 
+                 seTE = df$sd_laz_el_control, studlab = df$study,
+                 method.tau = tau.method, 
+                 hakn = F, pscale = 100, prediction = TRUE)
+summary(meta6)
+forest(meta6, 
+       layout = "JAMA", 
+       leftlabs = c("Study", "Prevalence, control, [95% CI]"))
+
+prevalence_control <- c(meta6$TE.random, meta6$upper.random, meta6$lower.random, meta6$seTE.random, meta6$Q, meta6$df.Q, meta6$I2, meta6$tau2)
+prevalence_control_df <- as.data.frame(prevalence_control)
+prevalence_control_df$meta <- c("RE.meta", "RE.meta.upper", "RE.meta.lower", "RE.se",
+                              "RE.Q", "RE.df", "RE.I2", "RE.tau2")
+
+prevalence_control_df_wide <- prevalence_control_df %>%
+  pivot_wider(names_from = meta, values_from = prevalence_control)
+prevalence_control_df_wide$arm <- "Control"
+```
+
+```{r combine results}
+
+### Combine the results
+
+meta_results_rii <- rbind(RII_control_df_wide, RII_intervention_df_wide)
+meta_results_prevalence <- rbind(prevalence_control_df_wide, prevalence_sqlns_df_wide)
+colnames(meta_results_prevalence) <- c("RE.prev", "RE.prev.upper", 
+                                       "RE.prev.lower", "RE.prev.se",
+                                       "RE.prev.Q", "RE.prev.df", 
+                                       "RE.prev.I2", "RE.prev.tau2", "arm.prev")
+meta_results_rii_prev <- cbind(meta_results_rii, meta_results_prevalence)
+
+
+meta_results_sii <- rbind(SII_control_df_wide, SII_intervention_df_wide)
+meta_results_sii_prev <- cbind(meta_results_sii, meta_results_prevalence)
+
+```
+
+```{r plot rii}
+
+meta_rii_laz <- ggplot(aes(x = arm, y = RE.meta), data = meta_results_rii) +
+  geom_point(aes(color = arm), size = 2.5) +
+  geom_errorbar(aes(x = arm, ymin = RE.meta.lower, ymax = RE.meta.upper), width = 0.1, data = meta_results_rii) +
+  labs(x = "LAZ", y = "Pooled RII (mean)") +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  theme_minimal() +
+  #scale_y_continuous(labels = scales::number_format(accuracy = 0.01)) +
+  scale_color_manual(values = c("Control" = "darkgrey", "SQ-LNS" = "darkblue")) +
+  theme(legend.position = "none")
+ 
+meta_rii_laz
+
+```
+
+```{r plot sii}
+
+meta_sii_laz <- ggplot(meta_results_sii, aes(x = arm, y = RE.meta*100)) +
+   geom_point(aes(color = arm), size = 2.5) +
+  geom_errorbar(aes(ymin = RE.meta.lower*100, ymax = RE.meta.upper*100), 
+                width = 0.1) +
+  labs(x = "LAZ", y = "Pooled SII %-point") +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  theme_minimal() +
+   scale_color_manual(values = c("Control" = "darkgrey", "SQ-LNS" = "darkblue")) +
+  theme(legend.position = "none") 
+  #ylim(0, NA)
+
+meta_sii_laz
+
+```
+
+```{r combine}
+
+meta_plot_laz <- plot_grid(meta_rii_laz, meta_sii_laz, ncol = 1, nrow = 2)
+
+meta_plot_laz
+```
+
+
+## Save the results
+```{r save results}
+
+#write.csv2(ineq, file = here::here("output", "rii_sii_laz.csv"), row.names = FALSE)
+
+```
+
+## Session info
+```{r session info}
+
+sessionInfo()
+
+```

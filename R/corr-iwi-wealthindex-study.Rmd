@@ -1,0 +1,113 @@
+---
+title: "Correlation between IWI and sesindex by study"
+author: "Pearl Ante-Testard"
+date: "`r Sys.Date()`"
+output: pdf_document
+  #officedown::rdocx_document
+   # theme: default
+    #highlight: default
+    #code_folding: hide
+    #toc: true
+    #toc_depth: 3,,
+    #toc_float:
+      #collapsed: true
+      #smooth_scroll: true
+knit: (function(inputFile, encoding) {
+        rmarkdown::render(inputFile, 
+                          encoding   = encoding, 
+                          output_dir = here::here("output")
+                          )})
+---
+
+```{r clean environment, echo=FALSE}
+
+rm(list=ls(all=TRUE))
+
+```
+
+```{r packages and functions, echo = TRUE, warning = FALSE}
+
+source(here::here("R", "0-config.R"))
+
+```
+
+```{r read formatted data, echo=FALSE}
+
+
+df_analysis <- readRDS(file = here::here("data", "1-final",
+                                         "df_analysis_iwi.rds")) %>% 
+  dplyr::mutate(study = sub("s[0-9]*_", "", study.x)) %>%
+  select(study, pid, region, cluster, arm_primary, iwi, sesindex) %>% 
+  dplyr::filter(!is.na(iwi)) %>%
+  dplyr::filter(!is.na(sesindex)) %>%
+  dplyr::mutate(iwi = as.numeric(iwi)) %>%
+  dplyr::mutate(sesindex = as.numeric(sesindex))
+       
+```
+
+```{r correlation_and_scatter_plots, echo=FALSE, message=FALSE, warning=FALSE}
+
+# Calculate correlation by study and arrange in ascending order
+correlation_by_study <- df_analysis %>%
+  group_by(study) %>%
+  summarize(correlation = cor(iwi, sesindex, use = "complete.obs", method = "pearson")) %>%
+  arrange(correlation)
+
+# Create an ordered factor for study based on correlation
+df_analysis <- df_analysis %>%
+  mutate(study = factor(study, levels = correlation_by_study$study))
+
+color_palette <- c(brewer.pal(name = "Set2", n = 8), brewer.pal(name = "Dark2", n = 8))
+
+
+correlation_plot <- ggplot(correlation_by_study, aes(x = reorder(study, correlation), y = correlation, fill = study)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = color_palette) +
+  theme_minimal() +
+  labs(
+    x = "Study",
+    y = "Pearson correlation"
+  ) + 
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "none"
+  )
+
+scatter_plot <- ggplot(df_analysis, aes(x = iwi, y = sesindex, color = study)) +
+  geom_point(alpha = 0.2) +
+  facet_wrap(~ study, scales = "free") +
+  scale_color_manual(values = color_palette) +
+  theme_minimal() +
+  labs(
+    title = "Correlation between IWI and wealth index by study",
+    x = "IWI",
+    y = "Wealth index"
+  ) +
+  ylim(-2, 4) +
+  xlim(0, 80) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "none"
+  )
+
+
+# Print the plots
+print(correlation_plot)
+print(scatter_plot)
+```
+
+```{r combine plots, echo=FALSE}
+
+# Combine the plots
+plot_combined <- scatter_plot/ correlation_plot 
+
+print(plot_combined)
+
+```
+
+```{r save plots, echo=FALSE}
+
+ggsave(here::here("output", "corr-iwi-wealthindex-study.png"), 
+       plot_combined, width = 11, height = 13, dpi = 300)
+
+```
