@@ -1,0 +1,151 @@
+---
+title: "Pooled RII and SII - binary outcomes - by sex"
+author: "Pearl Ante-Testard"
+date: "`r Sys.Date()`"
+output: pdf_document
+knit: (function(inputFile, encoding) {
+        rmarkdown::render(inputFile, 
+                          encoding   = encoding, 
+                          output_dir = here::here("output")
+                          )})
+---
+
+```{r clean environment, echo=FALSE}
+
+rm(list=ls(all=TRUE))
+
+```
+
+```{r packages and functions, echo = TRUE, warning = FALSE}
+
+source(here::here("R", "0-config.R"))
+
+render(here::here("R", "rii-sii-ineq-female",
+                  "female-rii-sii-ineq-stunted.Rmd"))
+render(here::here("R", "rii-sii-ineq-female",
+                  "female-rii-sii-ineq-wasted.Rmd"))
+render(here::here("R", "rii-sii-ineq-female",
+                  "female-rii-sii-ineq-severe-stunted.Rmd"))
+render(here::here("R", "rii-sii-ineq-female",
+                  "female-rii-sii-ineq-anemia.Rmd"))
+
+render(here::here("R", "rii-sii-ineq-male",
+                  "male-rii-sii-ineq-stunted.Rmd"))
+render(here::here("R", "rii-sii-ineq-male",
+                  "male-rii-sii-ineq-wasted.Rmd"))
+render(here::here("R", "rii-sii-ineq-male",
+                  "male-rii-sii-ineq-severe-stunted.Rmd"))
+render(here::here("R", "rii-sii-ineq-male",
+                  "male-rii-sii-ineq-anemia.Rmd"))
+```
+
+```{r rii female plots, echo=FALSE}
+
+af <- meta_rii_stunted_f + ylim(0, 6) + labs(tag = "A", x = "Stunting (female)", 
+                                             y = "Pooled RII")  
+bf <- meta_rii_wasted_f + ylim(0, 6) + labs(x = "Wasting (female)", 
+                                             y = "Pooled RII")  
+cf <- meta_rii_severe_stunted_f + ylim(0, 6) + labs(x = "Severe stunting (female)", 
+                                             y = "Pooled RII")  
+df <- meta_rii_anemia_f + ylim(0, 6) + labs(x = "Anemia (female)", 
+                                             y = "Pooled RII")  
+
+rii_f <- af / bf/ cf / df
+
+rii_f
+
+```
+
+
+```{r rii male plots, echo=FALSE}
+
+am <- meta_rii_stunted_m + ylim(0, 6) + labs(tag = "B", x = "Stunting (male)", 
+                                             y = "Pooled RII")  
+bm <- meta_rii_wasted_m + ylim(0, 6) + labs(x = "Wasting (male)", 
+                                             y = "Pooled RII")  
+cm <- meta_rii_severe_stunted_m + ylim(0, 6) + labs(x = "Severe stunting (male)", 
+                                             y = "Pooled RII")  
+dm <- meta_rii_anemia_m + ylim(0, 6) + labs(x = "Anemia (male)", 
+                                             y = "Pooled RII")  
+
+rii_m <- am / bm/ cm / dm
+
+rii_m
+
+```
+
+```{r sii female plots, echo=FALSE}
+
+ef <- meta_sii_stunted_f + ylim(-14, 20) + labs(tag = "A", x = "Stunting (female)", 
+                                             y = "Pooled SII")  
+ff <- meta_sii_wasted_f + ylim(-14, 20) + labs(x = "Wasting (female)", 
+                                             y = "Pooled SII") 
+gf <- meta_sii_severe_stunted_f + ylim(-14, 20) + labs(x = "Severe stunting (female)", 
+                                             y = "Pooled SII") 
+hf <- meta_sii_anemia_f + ylim(-14, 20) + labs(x = "Anemia (female)", 
+                                             y = "Pooled SII") 
+
+sii_f <- ef / ff / gf / hf
+
+sii_f
+
+```
+
+```{r sii male plots, echo=FALSE}
+
+em <- meta_sii_stunted_m + ylim(-14, 25) + labs(tag = "B", x = "Stunting (male)", 
+                                             y = "Pooled SII") 
+fm <- meta_sii_wasted_m + ylim(-14, 25) + labs(x = "Wasting (male)", 
+                                             y = "Pooled SII") 
+gm <- meta_sii_severe_stunted_m + ylim(-14, 25) + labs(x = "Severe stunting (male)", 
+                                             y = "Pooled SII") 
+hm <- meta_sii_anemia_m + ylim(-14, 25) + labs(x = "Anemia (male)", 
+                                             y = "Pooled SII") 
+
+sii_m <- em / fm / gm / hm
+
+sii_m
+
+```
+
+```{r rii fm, echo=FALSE}
+
+afm <- af + am
+bfm <- bf + bm
+cfm <- cf + cm
+dfm <- df + dm
+
+all_plot_rii_fm <- afm / bfm / cfm / dfm
+all_plot_rii_fm
+
+```
+
+```{r rii fm, echo=FALSE}
+
+efm <- ef + em
+ffm <- ff + fm
+gfm <- gf + gm
+hfm <- hf + hm
+
+all_plot_sii_fm <- efm / ffm / gfm / hfm
+all_plot_sii_fm
+
+```
+
+
+```{r save plots, echo=FALSE}
+
+#ggsave(here::here("output", "rii-ineq.png"), rii, width = 6, height = 8, dpi = 300)
+#ggsave(here::here("output", "sii-ineq.png"), sii, width = 6, height = 8, dpi = 300)
+ggsave(here::here("output", "female-male-rii-ineq.png"), all_plot_rii_fm, width = 6, height = 7, dpi = 300)
+ggsave(here::here("output", "female-male-sii-ineq.png"), all_plot_sii_fm, width = 6, height = 7, dpi = 300)
+
+```
+
+
+## Session info
+```{r session info}
+
+sessionInfo()
+
+```

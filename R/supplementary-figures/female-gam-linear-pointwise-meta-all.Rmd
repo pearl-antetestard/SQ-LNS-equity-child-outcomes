@@ -1,0 +1,260 @@
+---
+title: "Absolute treatment effect by Pointwise meta-analysis, female"
+author: "Pearl Ante-Testard"
+date: "`r Sys.Date()`"
+output: pdf_document
+knit: (function(inputFile, encoding) {
+        rmarkdown::render(inputFile, 
+                          encoding   = encoding, 
+                          output_dir = here::here("output")
+                          )})
+---
+
+```{r clean environment, echo=FALSE}
+
+rm(list=ls(all=TRUE))
+
+```
+
+```{r packages and functions, echo = TRUE, warning = FALSE}
+
+source(here::here("R", "0-config.R"))
+
+source(here::here("R", "female-comb-linear-gam-meta-plot.R"))
+
+```
+
+
+```{r 1, echo=FALSE}
+
+# LAZ
+point.wise.DF.SS.Comb.plot_laz_f <- point.wise.DF.SS.Comb.plot_laz_f +
+  theme(legend.position = c(0.40, 0.85)) + ylim(-2.5, 0.1) + 
+  ylab("Pooled LAZ (F)") 
+#point.wise.DF.SS.Comb.diff.plot_laz <- point.wise.DF.SS.Comb.diff.plot_laz +
+#  ylim(-0.15, 0.25)
+combined_plot_laz_f <- combined_plot_laz_f + 
+  theme(legend.position = c(0.40, 0.15)) + ylim(-0.2, 0.4)
+
+plot_comp_effect_laz_f <- plot_grid(point.wise.DF.SS.Comb.plot_laz_f, 
+                                  combined_plot_laz_f, ncol = 1)
+
+# WLZ
+point.wise.DF.SS.Comb.plot_wlz_f <- point.wise.DF.SS.Comb.plot_wlz_f +
+  theme(legend.position = "none") + ylim(-2.5, 0.1) + 
+  ylab("Pooled WLZ (F)") 
+#point.wise.DF.SS.Comb.diff.plot_wlz <- point.wise.DF.SS.Comb.diff.plot_wlz +
+#  ylim(-0.15, 0.25)
+combined_plot_wlz_f <- combined_plot_wlz_f + 
+  theme(legend.position = "none") + ylim(-0.2, 0.4)
+
+plot_comp_effect_wlz_f <- plot_grid(point.wise.DF.SS.Comb.plot_wlz_f, 
+                                  combined_plot_wlz_f, ncol = 1)
+
+# Stunted
+point.wise.DF.SS.Comb.plot_stunted_f <- point.wise.DF.SS.Comb.plot_stunted_f +
+  theme(legend.position = "none") + ylim(0, 0.6) + 
+  ylab("Pooled probability of stunting (F)") 
+#point.wise.DF.SS.Comb.diff.plot_stunted <- point.wise.DF.SS.Comb.diff.plot_stunted +
+ # ylim(-0.15, 0.25)
+combined_plot_stunted_f <- combined_plot_stunted_f + 
+  theme(legend.position = "none") + ylim(-0.2, 0.4)
+
+plot_comp_effect_stunted_f <- plot_grid(point.wise.DF.SS.Comb.plot_stunted_f, combined_plot_stunted_f, ncol = 1)
+
+# Wasted
+point.wise.DF.SS.Comb.plot_wasted_f <- point.wise.DF.SS.Comb.plot_wasted_f +
+  theme(legend.position = "none") + ylim(0, 0.6) + 
+  ylab("Pooled probability of wasting (F)") 
+#point.wise.DF.SS.Comb.diff.plot_wasted <- point.wise.DF.SS.Comb.diff.plot_wasted +
+#   ylim(-0.15, 0.25)
+combined_plot_wasted_f <- combined_plot_wasted_f + 
+  theme(legend.position = "none") + ylim(-0.2, 0.4)
+
+plot_comp_effect_wasted_f <- plot_grid(point.wise.DF.SS.Comb.plot_wasted_f, combined_plot_wasted_f, ncol = 1)
+
+# Severe stunted
+point.wise.DF.SS.Comb.plot_severe_stunted_f <- point.wise.DF.SS.Comb.plot_severe_stunted_f + theme(legend.position = "none") + ylim(0, 0.6) + 
+  ylab("Pooled prob. of severe stunting (F)") 
+#point.wise.DF.SS.Comb.diff.plot_severe_stunted <- point.wise.DF.SS.Comb.diff.plot_severe_stunted +
+ #  ylim(-0.15, 0.25)
+combined_plot_severe_stunted_f <- combined_plot_severe_stunted_f + 
+  theme(legend.position = "none") + ylim(-0.2, 0.4)
+
+plot_comp_effect_severe_stunted_f <- plot_grid(point.wise.DF.SS.Comb.plot_severe_stunted_f, 
+                                             combined_plot_severe_stunted_f, ncol = 1)
+
+# Combine all the plots
+plot_composite_growth_f <- plot_grid(plot_comp_effect_laz_f, plot_comp_effect_wlz_f,
+                                   plot_comp_effect_stunted_f, plot_comp_effect_wasted_f,
+                                   plot_comp_effect_severe_stunted_f, ncol=5,
+                                   labels = c("A", "B", "C", "D", "E")) 
+plot_composite_growth_f
+
+# Add a vertical line to separate plot A and B from plot C, D, and E
+plot_composite_growth_f <- ggdraw(plot_composite_growth_f) +
+  draw_line(x = 0.4, y = c(0, 1), color = "black", size = 1)
+
+plot_composite_growth_f
+
+```
+
+```{r 2, echo=FALSE}
+
+# Save the plot
+#ggsave(here::here("output", "gam_linear_pooled_pointwise_growth_maternal.png"),
+      # plot = plot_composite_growth, width = 24, height = 16, dpi = 300)
+ggsave(here::here("output", "female_gam_linear_pooled_pointwise_growth_maternal.png"),
+       plot = plot_composite_growth_f, width = 20, height = 10, dpi = 300)
+
+```
+
+```{r 3, echo=FALSE}
+
+# Language
+point.wise.DF.SS.Comb.plot_language_f <- point.wise.DF.SS.Comb.plot_language_f +
+  theme(legend.position = c(0.40, 0.85)) + ylim(-0.5, 0.5) + 
+  ylab("Pooled language score (F)") 
+#point.wise.DF.SS.Comb.diff.plot_language <- point.wise.DF.SS.Comb.diff.plot_language + 
+ # ylim(-0.4, 0.4)
+combined_plot_language_f <- combined_plot_language_f + 
+  theme(legend.position = c(0.40, 0.25)) + ylim(-0.4, 0.5)
+
+plot_comp_effect_language_f <- plot_grid(point.wise.DF.SS.Comb.plot_language_f, combined_plot_language_f, ncol = 1)
+
+# Gross motor
+point.wise.DF.SS.Comb.plot_gross_f <- point.wise.DF.SS.Comb.plot_gross_f +
+  theme(legend.position = "none") + ylim(-0.5, 0.5) + 
+  ylab("Pooled gross motor score (F)") 
+#point.wise.DF.SS.Comb.diff.plot_gross <- point.wise.DF.SS.Comb.diff.plot_gross + 
+ # ylim(-0.4, 0.4)
+combined_plot_gross_f <- combined_plot_gross_f + 
+  theme(legend.position = "none") + ylim(-0.4, 0.5)
+
+plot_comp_effect_gross_f <- plot_grid(point.wise.DF.SS.Comb.plot_gross_f, combined_plot_gross_f, ncol = 1)
+
+# Fine motor
+point.wise.DF.SS.Comb.plot_fine_f <- point.wise.DF.SS.Comb.plot_fine_f +
+  theme(legend.position = "none") + ylim(-0.5, 0.5) + 
+  ylab("Pooled fine motor score (F)") 
+#point.wise.DF.SS.Comb.diff.plot_fine <- point.wise.DF.SS.Comb.diff.plot_fine + 
+#  ylim(-0.4, 0.4)
+combined_plot_fine_f <- combined_plot_fine_f + 
+  theme(legend.position = "none") + ylim(-0.4, 0.5)
+
+plot_comp_effect_fine_f <- plot_grid(point.wise.DF.SS.Comb.plot_fine_f, combined_plot_fine_f, ncol = 1)
+
+# Executive function
+point.wise.DF.SS.Comb.plot_exec_f <- point.wise.DF.SS.Comb.plot_exec_f +
+  theme(legend.position = "none") + ylim(-0.5, 0.5) + 
+  ylab("Pooled executive function score (F)") 
+#point.wise.DF.SS.Comb.diff.plot_exec <- point.wise.DF.SS.Comb.diff.plot_exec + 
+#  ylim(-0.4, 0.4)
+combined_plot_exec_f <- combined_plot_exec_f + 
+  theme(legend.position = "none") + ylim(-0.4, 0.5)
+
+plot_comp_effect_exec_f <- plot_grid(point.wise.DF.SS.Comb.plot_exec_f, combined_plot_exec_f, ncol = 1)
+
+# Socioemotional
+point.wise.DF.SS.Comb.plot_socioemo_f <- point.wise.DF.SS.Comb.plot_socioemo_f +
+  theme(legend.position = "none") + ylim(-0.5, 0.5) + 
+  ylab("Pooled socioemotional score (F)") 
+#point.wise.DF.SS.Comb.diff.plot_socioemo <- point.wise.DF.SS.Comb.diff.plot_socioemo + 
+ # ylim(-0.4, 0.4)
+combined_plot_socioemo_f <- combined_plot_socioemo_f + 
+  theme(legend.position = "none") + ylim(-0.4, 0.5)
+
+plot_comp_effect_socioemo_f <- plot_grid(point.wise.DF.SS.Comb.plot_socioemo_f, combined_plot_socioemo_f, ncol = 1)
+
+plot_composite_development_f <- plot_grid(plot_comp_effect_language_f, 
+                                        plot_comp_effect_gross_f,
+                                        plot_comp_effect_fine_f, 
+                                        plot_comp_effect_exec_f,
+                                        plot_comp_effect_socioemo_f, ncol=5,
+                                        labels = c("A", "B", "C", "D", "E")) 
+plot_composite_development_f
+
+```
+
+```{r 4, echo=FALSE}
+
+# Save the plot
+#ggsave(here::here("output", "gam_pooled_pointwise_development_arm_maternal.png"),
+#       plot = plot_composite_development, width = 19, height = 17, dpi = 300)
+
+ggsave(here::here("output", "female_gam_linear_pooled_pointwise_development_maternal.png"),
+       plot = plot_composite_development_f, width = 20, height = 10, dpi = 300)
+
+```
+
+```{r 5, echo=FALSE}
+
+# HGB
+point.wise.DF.SS.Comb.plot_hgb_f <- point.wise.DF.SS.Comb.plot_hgb_f +
+  theme(legend.position = c(0.30, 0.35)) + ylim(80,120) +
+  ylab("Pooled hemoglobin concentration (F)") 
+#point.wise.DF.SS.Comb.diff.plot_hgb <- point.wise.DF.SS.Comb.diff.plot_hgb +
+#  ylim(0, 8)
+combined_plot_hgb_f <- combined_plot_hgb_f + 
+  theme(legend.position = c(0.70, 0.80)) + ylim(-2, 10)
+
+plot_comp_effect_hgb_f <- plot_grid(point.wise.DF.SS.Comb.plot_hgb_f, combined_plot_hgb_f, ncol = 1)
+
+# Anemia
+point.wise.DF.SS.Comb.plot_anemia_f <- point.wise.DF.SS.Comb.plot_anemia_f +
+  theme(legend.position = "none") + ylim(0.0,1.0) +
+  ylab("Pooled probability of anemia (F)") 
+#point.wise.DF.SS.Comb.diff.plot_anemia <- point.wise.DF.SS.Comb.diff.plot_anemia +
+#  ylim(-0.2, 0.2)
+combined_plot_anemia_f <- combined_plot_anemia_f + 
+  theme(legend.position = "none") + ylim(-0.3, 0.2)
+
+plot_comp_effect_anemia_f <- plot_grid(point.wise.DF.SS.Comb.plot_anemia_f, combined_plot_anemia_f, ncol = 1)
+
+# Combine all the plots
+plot_composite_blood_f <- plot_grid(plot_comp_effect_hgb_f, 
+                                  plot_comp_effect_anemia_f, ncol=2,
+                                   labels = c("A", "B"))
+plot_composite_blood_f
+
+# Add a vertical line to separate plot A and B from plot C, D, and E
+plot_composite_blood_f <- ggdraw(plot_composite_blood_f) +
+  draw_line(x = 0.5, y = c(0, 1), color = "black", size = 1)
+
+plot_composite_blood_f
+
+```
+
+```{r 6, echo=FALSE}
+
+# Save the plot
+#ggsave(here::here("output", "gam_pooled_pointwise_blood_arm_maternal.png"),
+#       plot = plot_composite_blood, width = 10, height = 10, dpi = 300)
+ggsave(here::here("output", "female_gam_linear_pooled_pointwise_blood_maternal.png"),
+       plot = plot_composite_blood_f, width = 12, height = 10, dpi = 300)
+
+```
+
+```{r 7, echo=FALSE}
+
+#plot_combined_all <- plot_grid(plot_composite_growth, plot_composite_development,
+#                               plot_composite_blood, nrow=3,
+#                               labels = c("Growth", "Development", "Anemia"))
+
+#plot_combined_all
+
+```
+
+```{r 8, echo=FALSE}
+
+# Save the plot
+#ggsave(here::here("output", "gam_pooled_pointwise_all_arm_maternal.png"),
+ #      plot = plot_combined_all, width = 24, height = 22, dpi = 300)
+
+```
+
+# Session info
+```{r session info}
+
+sessionInfo()
+```

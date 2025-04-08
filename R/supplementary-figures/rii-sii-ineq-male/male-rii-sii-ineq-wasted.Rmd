@@ -1,0 +1,432 @@
+---
+title: "Measuring ineq_mualities: RII and SII - wasted, male"
+author: "Pearl Ante-Testard"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: default
+    highlight: default
+    code_molding: hide
+    toc: true
+    toc_depth: 3
+    toc_mloat:
+      collapsed: true
+      smooth_scroll: true
+knit: (function(inputFile, encoding) {
+        rmarkdown::render(inputFile, 
+                          encoding   = encoding, 
+                          output_dir = here::here("output")
+                          )})
+---
+
+```{r clean environment, echo=FALSE}
+
+#rm(list=ls(all=TRUE))
+```
+
+```{r configuration, message=FALSE}
+
+source(here::here("R", "0-config.R"))
+
+```
+
+
+```{r data, message=FALSE}
+
+# Load the data
+df_analysis_wasted_m <- readRDS(file = here::here("data", "1-final", "df_analysis_iwi.rds")) %>% 
+  filter(female == 0) %>%
+  dplyr::mutate(study = sub("s[0-9]*_", "", study.x)) %>%
+  select(study, pid, region, cluster, arms_maternal, iwi, wasted_el) %>% 
+  dplyr::filter(!is.na(iwi)) %>%
+  dplyr::filter(!is.na(arms_maternal)) %>%
+  dplyr::filter(!is.na(wasted_el)) %>%
+  dplyr::mutate(
+    arms_maternal = factor(arms_maternal, levels = c(0, 1), labels = c("Control", "SQ-LNS")),
+    iwi = as.numeric(iwi),
+    cluster = factor(cluster),
+    wasted_el = factor(wasted_el),
+    iwi_decile = ntile(iwi, 10)
+  )
+
+# Calculate the ECDF for iwi_decile
+ecdf_iwi_decile <- ecdf(df_analysis_wasted_m$iwi_decile)
+
+# Apply the ECDF to get the relative rank
+df_analysis_wasted_m <- df_analysis_wasted_m %>%
+  mutate(iwi_relative_rank = ecdf_iwi_decile(iwi_decile))
+
+# Print the data frame with the new relative rank column
+print(df_analysis_wasted_m)
+
+```
+
+
+## RII and SII estimates from the glm model
+
+Here, used iwi in the model.
+
+RII > 1 or SII > 0: wasted_el is higher among the poor than the rich; 
+RII = 1 or SII = 0: no ineq_muality
+
+```{r RII and SII}
+
+ineq_m <- df_analysis_wasted_m %>%
+  split(.$study) %>%
+  map_dfr(function(df_analysis_wasted_m) {
+    study_name <- unique(df_analysis_wasted_m$study)
+    results <- list()
+    
+    if (study_name %in% c("DOSE", "GHANA", "HAITI", "DYADG", "DYADM")) {
+      # Control group
+      df_control <- df_analysis_wasted_m %>% filter(arms_maternal == "Control")
+      glm_c <- glm(wasted_el ~ iwi_relative_rank, family = binomial(link = "log"), data = df_control)
+      glm_c_robust_vcov <- vcovCL(glm_c, cluster = NULL)
+      glm_c_lin_robustse <- coeftest(glm_c, vcov. = glm_c_robust_vcov)
+      
+      beta_glm_c <- coef(glm_c)[1] - (coef(glm_c)[1] + coef(glm_c)[2])
+      RII_glm_c <- exp(beta_glm_c)
+      se_b1 <- glm_c_lin_robustse[2, 2]
+      RII_low <- exp(beta_glm_c - 1.96 * se_b1)
+      RII_up <- exp(beta_glm_c + 1.96 * se_b1)
+      
+      SII_glm_c <- exp(coef(glm_c)[1]) - exp(coef(glm_c)[1] + coef(glm_c)[2])
+      b <- coef(glm_c_lin_robustse)
+      SII_sd <- deltamethod(~exp(x1) - exp(x1 + x2), b, glm_c_robust_vcov)
+      SII_low <- SII_glm_c - 1.96 * SII_sd
+      SII_up <- SII_glm_c + 1.96 * SII_sd
+      
+      results$control <- list(RII = RII_glm_c, RII_low = RII_low, RII_up = RII_up,
+                              SII = SII_glm_c, SII_low = SII_low, SII_up = SII_up)
+      
+      # Intervention group
+      df_interv <- df_analysis_wasted_m %>% filter(arms_maternal == "SQ-LNS")
+      glm_i <- glm(wasted_el ~ iwi_relative_rank, family = binomial(link = "log"), data = df_interv)
+      glm_i_robust_vcov <- vcovCL(glm_i, cluster = NULL)
+      glm_i_lin_robustse <- coeftest(glm_i, vcov. = glm_i_robust_vcov)
+      
+      beta_glm_i <- coef(glm_i)[1] - (coef(glm_i)[1] + coef(glm_i)[2])
+      RII_glm_i <- exp(beta_glm_i)
+      se_b1_i <- glm_i_lin_robustse[2, 2]
+      RII_low_i <- exp(beta_glm_i - 1.96 * se_b1_i)
+      RII_up_i <- exp(beta_glm_i + 1.96 * se_b1_i)
+      
+      SII_glm_i <- exp(coef(glm_i)[1]) - exp(coef(glm_i)[1] + coef(glm_i)[2])
+      b_i <- coef(glm_i_lin_robustse)
+      SII_sd_i <- deltamethod(~exp(x1) - exp(x1 + x2), b_i, glm_i_robust_vcov)
+      SII_low_i <- SII_glm_i - 1.96 * SII_sd_i
+      SII_up_i <- SII_glm_i + 1.96 * SII_sd_i
+      
+      results$intervention <- list(RII = RII_glm_i, RII_low = RII_low_i, RII_up = RII_up_i,
+                                   SII = SII_glm_i, SII_low = SII_low_i, SII_up = SII_up_i)
+      
+    } else {
+      # Control group
+      df_control <- df_analysis_wasted_m %>% filter(arms_maternal == "Control")
+      glm_c <- glm(wasted_el ~ iwi_relative_rank, family = binomial(link = "log"), data = df_control)
+      glm_c_robust_vcov <- vcovCL(glm_c, cluster = df_control$cluster)
+      glm_c_lin_robustse <- coeftest(glm_c, vcov. = glm_c_robust_vcov)
+      
+      beta_glm_c <- coef(glm_c_lin_robustse)[1] - (coef(glm_c_lin_robustse)[1] + coef(glm_c_lin_robustse)[2])
+      RII_glm_c <- exp(beta_glm_c)
+      se_b1 <- glm_c_lin_robustse[2, 2]
+      RII_low <- exp(beta_glm_c - 1.96 * se_b1)
+      RII_up <- exp(beta_glm_c + 1.96 * se_b1)
+      
+      SII_glm_c <- exp(coef(glm_c_lin_robustse)[1]) - exp(coef(glm_c_lin_robustse)[1] + coef(glm_c_lin_robustse)[2])
+      b <- coef(glm_c_lin_robustse)
+      SII_sd <- deltamethod(~exp(x1) - exp(x1 + x2), b, glm_c_robust_vcov)
+      SII_low <- SII_glm_c - 1.96 * SII_sd
+      SII_up <- SII_glm_c + 1.96 * SII_sd
+      
+      results$control <- list(RII = RII_glm_c, RII_low = RII_low, RII_up = RII_up,
+                              SII = SII_glm_c, SII_low = SII_low, SII_up = SII_up)
+      
+      # Intervention group
+      df_interv <- df_analysis_wasted_m %>% filter(arms_maternal == "SQ-LNS")
+      glm_i <- glm(wasted_el ~ iwi_relative_rank, family = binomial(link = "log"), data = df_interv)
+      glm_i_robust_vcov <- vcovCL(glm_i, cluster = df_interv$cluster)
+      glm_i_lin_robustse <- coeftest(glm_i, vcov. = glm_i_robust_vcov)
+      
+      beta_glm_i <- coef(glm_i_lin_robustse)[1] - (coef(glm_i_lin_robustse)[1] + coef(glm_i_lin_robustse)[2])
+      RII_glm_i <- exp(beta_glm_i)
+      se_b1_i <- glm_i_lin_robustse[2, 2]
+      RII_low_i <- exp(beta_glm_i - 1.96 * se_b1_i)
+      RII_up_i <- exp(beta_glm_i + 1.96 * se_b1_i)
+      
+      SII_glm_i <- exp(coef(glm_i_lin_robustse)[1]) - exp(coef(glm_i_lin_robustse)[1] + coef(glm_i_lin_robustse)[2])
+      b_i <- coef(glm_i_lin_robustse)
+      SII_sd_i <- deltamethod(~exp(x1) - exp(x1 + x2), b_i, glm_i_robust_vcov)
+      SII_low_i <- SII_glm_i - 1.96 * SII_sd_i
+      SII_up_i <- SII_glm_i + 1.96 * SII_sd_i
+      
+      results$intervention <- list(RII = RII_glm_i, RII_low = RII_low_i, RII_up = RII_up_i,
+                                   SII = SII_glm_i, SII_low = SII_low_i, SII_up = SII_up_i)
+    }
+    
+    # Create a data frame with the results
+    ineq_m_tab <- data.frame(
+      study = study_name,
+      RII_control = round(results$control$RII, 3),
+      RII_low_control = round(results$control$RII_low, 3),
+      RII_up_control = round(results$control$RII_up, 3),
+      SII_control = round(results$control$SII, 3),
+      SII_low_control = round(results$control$SII_low, 3),
+      SII_up_control = round(results$control$SII_up, 3),
+      RII_intervention = round(results$intervention$RII, 3),
+      RII_low_intervention = round(results$intervention$RII_low, 3),
+      RII_up_intervention = round(results$intervention$RII_up, 3),
+      SII_intervention = round(results$intervention$SII, 3),
+      SII_low_intervention = round(results$intervention$SII_low, 3),
+      SII_up_intervention = round(results$intervention$SII_up, 3)
+    )
+    
+    return(ineq_m_tab)
+  })
+
+print(ineq_m)
+
+```
+```{r prev}
+
+# Calculate the prevalence of wasted_el by study
+prevalence_values_wasted <- df_analysis_wasted_m %>%
+  group_by(study, arms_maternal) %>%
+  summarise(
+    prevalence_wasted_el = mean(wasted_el == 1, na.rm = TRUE),
+    sd_wasted_el = sd(wasted_el == 1, na.rm = TRUE)
+  ) 
+
+# Calculate the overall prevalence of wasted_el by study
+overall_prevalence_wasted <- df_analysis_wasted_m %>%
+  group_by(study) %>%
+  summarise(
+    prevalence_wasted_el = mean(wasted_el == 1, na.rm = TRUE),  # Calculate the prevalence
+    sd_wasted_el = sd(wasted_el == 1, na.rm = TRUE)
+  )
+
+
+```
+
+## Meta-analysis
+
+```{r prepare data prev}
+
+df_sqlns <- subset(prevalence_values_wasted, (arms_maternal %in% c("SQ-LNS"))) 
+colnames(df_sqlns) <- c("study", "arms_maternal", "prevalence_wasted_el_sqlns",
+                        "sd_wasted_el_sqlns")
+df_control <- subset(prevalence_values_wasted, (arms_maternal %in% c("Control")))
+colnames(df_control) <- c("study", "arms_maternal", "prevalence_wasted_el_control",
+                        "sd_wasted_el_control")
+df <- left_join(ineq_m, df_sqlns, by = "study") 
+df <- left_join(df, df_control, by = "study")
+df <- left_join(df, overall_prevalence_wasted, by = "study")
+
+tau.method <- "REML" 
+options(scipen = 999)
+```
+
+
+```{r meta-analysis RII control}
+
+### RII control
+meta1 <- metagen(TE = log(df$RII_control), lower = log(df$RII_low_control), upper =  log(df$RII_up_control), method.tau = tau.method, hakn = F, func.backtransf = exp,
+                 studlab = df$study, prediction = TRUE)
+summary(meta1)
+forest(meta1, 
+       layout = "JAMA", 
+       leftlabs = c("Study", "RII control [95% CI]"),
+       label.right = "Pro-rich", 
+       label.left = "Pro-poor")
+
+RII_control <- c(exp(meta1$TE.random), exp(meta1$upper.random), exp(meta1$lower.random), exp(meta1$seTE.random), meta1$Q, meta1$df.Q, meta1$I2, meta1$tau2)
+RII_control_df <- as.data.frame(RII_control)
+RII_control_df$meta <- c("RE.meta", "RE.meta.upper", "RE.meta.lower", "RE.se",
+                              "RE.Q", "RE.df", "RE.I2", "RE.tau2")
+
+RII_control_df_wide <- RII_control_df %>%
+  pivot_wider(names_from = meta, values_from = RII_control) 
+RII_control_df_wide$arm <- "Control"
+```
+
+```{r meta-analysis RII intervention}
+
+### RII intervention
+meta2 <- metagen(TE = log(df$RII_intervention), lower = log(df$RII_low_intervention), upper =  log(df$RII_up_intervention), method.tau = tau.method, hakn = F, 
+                 func.backtransf = exp, studlab = df$study, prediction = TRUE)
+summary(meta2)
+forest(meta2, 
+       layout = "JAMA", 
+       leftlabs = c("Study", "RII SQ-LNS [95% CI]"),
+       label.right = "Pro-rich", 
+       label.left = "Pro-poor")
+
+RII_intervention <- c(exp(meta2$TE.random), exp(meta2$upper.random), exp(meta2$lower.random), exp(meta2$seTE.random), meta2$Q, meta2$df.Q, meta2$I2, meta2$tau2)
+RII_intervention_df <- as.data.frame(RII_intervention)
+RII_intervention_df$meta <- c("RE.meta", "RE.meta.upper", "RE.meta.lower", "RE.se",
+                                   "RE.Q", "RE.df", "RE.I2", "RE.tau2")
+
+RII_intervention_df_wide <- RII_intervention_df %>%
+  pivot_wider(names_from = meta, values_from = RII_intervention)
+RII_intervention_df_wide$arm <- "SQ-LNS"
+```
+
+```{r meta-analysis SII control}
+
+### SII control
+meta3 <- metagen(TE = df$SII_control, lower = df$SII_low_control, upper =  df$SII_up_control, method.tau = tau.method, hakn = F,  pscale = 100,
+                 studlab = df$study, prediction = TRUE)
+summary(meta3)
+forest(meta3, 
+       layout = "JAMA", 
+       leftlabs = c("Study", "SII %-points control [95% CI]"),
+       label.right = "Pro-rich", 
+       label.left = "Pro-poor")
+
+SII_control <- c(meta3$TE.random, meta3$upper.random, meta3$lower.random, meta3$seTE.random, meta3$Q, meta3$df.Q, meta3$I2, meta3$tau2)
+SII_control_df <- as.data.frame(SII_control)
+SII_control_df$meta <- c("RE.meta", "RE.meta.upper", "RE.meta.lower", "RE.se",
+                               "RE.Q", "RE.df", "RE.I2", "RE.tau2")
+
+SII_control_df_wide <- SII_control_df %>%
+  pivot_wider(names_from = meta, values_from = SII_control)
+SII_control_df_wide$arm <- "Control"
+```
+
+```{r meta-analysis SII intervention}
+
+### SII intervention
+meta4 <- metagen(TE = df$SII_intervention, lower = df$SII_low_intervention, upper =  df$SII_up_intervention, method.tau = tau.method, hakn = F, pscale = 100,
+                 studlab = df$study, prediction = TRUE)
+summary(meta4)
+forest(meta4, 
+       layout = "JAMA", 
+       leftlabs = c("Study", "SII %-points SQ-LNS [95% CI]"),
+       label.right = "Pro-rich", 
+       label.left = "Pro-poor")
+
+SII_intervention <- c(meta4$TE.random, meta4$upper.random, meta4$lower.random, meta4$seTE.random, meta4$Q, meta4$df.Q, meta4$I2, meta4$tau2)
+SII_intervention_df <- as.data.frame(SII_intervention)
+SII_intervention_df$meta <- c("RE.meta", "RE.meta.upper", "RE.meta.lower", "RE.se",
+                                   "RE.Q", "RE.df", "RE.I2", "RE.tau2")
+
+SII_intervention_df_wide <- SII_intervention_df %>%
+  pivot_wider(names_from = meta, values_from = SII_intervention)
+SII_intervention_df_wide$arm <- "SQ-LNS"
+```
+
+```{r meta-analysis prevalence}
+
+### Prevalence SQ-LNS
+meta5 <- metagen(TE = df$prevalence_wasted_el_sqlns, seTE = df$sd_wasted_el_sqlns, 
+                 method.tau = tau.method, studlab = df$study,
+                 hakn = F, pscale = 100, prediction = TRUE)
+summary(meta5)
+forest(meta5, 
+       layout = "JAMA", 
+       leftlabs = c("Study", "Prevalence, SQ-LNS, [95% CI]"))
+
+prevalence_sqlns <- c(meta5$TE.random, meta5$upper.random, meta5$lower.random, meta5$seTE.random, meta5$Q, meta5$df.Q, meta5$I2, meta5$tau2)
+prevalence_sqlns_df <- as.data.frame(prevalence_sqlns)
+prevalence_sqlns_df$meta <- c("RE.meta", "RE.meta.upper", "RE.meta.lower", "RE.se",
+                              "RE.Q", "RE.df", "RE.I2", "RE.tau2")
+
+prevalence_sqlns_df_wide <- prevalence_sqlns_df %>%
+  pivot_wider(names_from = meta, values_from = prevalence_sqlns)
+prevalence_sqlns_df_wide$arm <- "SQ-LNS"
+```
+
+```{r meta-analysis prevalence control}
+
+### Prevalence control
+meta6 <- metagen(TE = df$prevalence_wasted_el_control, 
+                 seTE = df$sd_wasted_el_control, studlab = df$study,
+                 method.tau = tau.method, 
+                 hakn = F, pscale = 100, prediction = TRUE)
+summary(meta6)
+forest(meta6, 
+       layout = "JAMA", 
+       leftlabs = c("Study", "Prevalence, control, [95% CI]"))
+
+prevalence_control <- c(meta6$TE.random, meta6$upper.random, meta6$lower.random, meta6$seTE.random, meta6$Q, meta6$df.Q, meta6$I2, meta6$tau2)
+prevalence_control_df <- as.data.frame(prevalence_control)
+prevalence_control_df$meta <- c("RE.meta", "RE.meta.upper", "RE.meta.lower", "RE.se",
+                              "RE.Q", "RE.df", "RE.I2", "RE.tau2")
+
+prevalence_control_df_wide <- prevalence_control_df %>%
+  pivot_wider(names_from = meta, values_from = prevalence_control)
+prevalence_control_df_wide$arm <- "Control"
+```
+
+```{r combine results}
+
+### Combine the results
+
+meta_results_rii_m <- rbind(RII_control_df_wide, RII_intervention_df_wide)
+meta_results_prevalence <- rbind(prevalence_control_df_wide, prevalence_sqlns_df_wide)
+colnames(meta_results_prevalence) <- c("RE.prev", "RE.prev.upper", 
+                                       "RE.prev.lower", "RE.prev.se",
+                                       "RE.prev.Q", "RE.prev.df", 
+                                       "RE.prev.I2", "RE.prev.tau2", "arm.prev")
+meta_results_rii_m_prev <- cbind(meta_results_rii_m, meta_results_prevalence)
+
+
+meta_results_sii_m <- rbind(SII_control_df_wide, SII_intervention_df_wide)
+meta_results_sii_m_prev <- cbind(meta_results_sii_m, meta_results_prevalence)
+
+```
+
+```{r plot rii}
+
+meta_rii_wasted_m <- ggplot(aes(x = arm, y = RE.meta), data = meta_results_rii_m) +
+  geom_point(aes(color = arm), size = 2.5) +
+  geom_errorbar(aes(x = arm, ymin = RE.meta.lower, ymax = RE.meta.upper), width = 0.1, data = meta_results_rii_m) +
+  labs(x = "Wasting", y = "Pooled RII") +
+  geom_hline(yintercept = 1, linetype = "dashed") +
+  theme_minimal() +
+  scale_y_continuous(labels = scales::number_format(accuracy = 0.01)) +
+  scale_color_manual(values = c("Control" = "darkgrey", "SQ-LNS" = "darkblue")) +
+  theme(legend.position = "none")
+ 
+meta_rii_wasted_m
+
+```
+
+```{r plot sii}
+
+meta_sii_wasted_m <- ggplot(meta_results_sii_m, aes(x = arm, y = RE.meta*100)) +
+   geom_point(aes(color = arm), size = 2.5) +
+  geom_errorbar(aes(ymin = RE.meta.lower*100, ymax = RE.meta.upper*100), 
+                width = 0.1) +
+  labs(x = "Wasting", y = "Pooled SII %-point") +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  theme_minimal() +
+   scale_color_manual(values = c("Control" = "darkgrey", "SQ-LNS" = "darkblue")) +
+  theme(legend.position = "none") 
+  #ylim(0, NA)
+
+meta_sii_wasted_m
+
+```
+
+```{r combine}
+
+meta_plot_wasted_m <- plot_grid(meta_rii_wasted_m, meta_sii_wasted_m, ncol = 1, nrow = 2)
+
+meta_plot_wasted_m
+```
+
+
+## Save the results
+```{r save results}
+
+write.csv2(ineq_m, file = here::here("output", "rii_sii_wasted_m.csv"), row.names = FALSE)
+
+```
+
+## Session info
+```{r session info}
+
+sessionInfo()
+
+```

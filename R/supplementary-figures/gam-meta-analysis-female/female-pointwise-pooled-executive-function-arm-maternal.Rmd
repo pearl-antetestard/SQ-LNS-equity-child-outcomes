@@ -1,0 +1,351 @@
+---
+title: "Absolute treatment effect by Pointwise meta-analysis - executive function score, female"
+author: "Pearl Ante-Testard"
+date: "`r Sys.Date()`"
+output: pdf_document
+knit: (function(inputFile, encoding) {
+        rmarkdown::render(inputFile, 
+                          encoding   = encoding, 
+                          output_dir = here::here("output")
+                          )})
+---
+
+```{r clean environment, echo=FALSE}
+
+#rm(list=ls(all=TRUE))
+
+```
+
+```{r packages and functions, echo = TRUE, warning = FALSE}
+
+source(here::here("R", "0-config.R"))
+
+```
+
+```{r read formatted data, echo=FALSE}
+
+df_analysis_exec_f <- readRDS(file = here::here("data", "1-final",
+                      "df_analysis_iwi.rds")) %>% 
+  subset(female == 1) %>%
+  dplyr::mutate(study = sub("s[0-9]*_", "", study.x)) %>%
+  select(study, pid, region, cluster, arms_maternal, iwi, d12_execfun_el) %>% 
+  dplyr::filter(!is.na(iwi)) %>%
+  dplyr::filter(!is.na(arms_maternal)) %>%
+  dplyr::filter(!is.na(d12_execfun_el)) %>%
+  dplyr::mutate(arms_maternal = factor(arms_maternal, levels = c(0,1), 
+                              labels = c("Control","SQ-LNS")),
+         iwi = as.numeric(iwi),
+         cluster = factor(cluster),
+         region = factor(region),
+         study = factor(study),
+         dummy = 1)
+        #dummy = case_when(
+        # study %in% c("DOSE", "GHANA", "HAITI") ~ 0,
+         #TRUE ~ 1),
+         #dummy = factor(dummy)) %>%
+  #dplyr::filter(!is.na(dummy)) 
+# View the dataframe
+#colnames(df_analysis)
+
+```
+
+
+# Fit a cubic splines model per study
+
+```{r 2, echo = TRUE, warning = FALSE}
+
+#SS.Comb <- df_analysis %>%
+ # split(.$study) %>%
+ # map_dfr(function(df_analysis) {
+ #   study_name <- unique(df_analysis$study)
+ #   if (study_name %in% c(study_name)) {
+ #     model <- gam(d12_execfun_el ~ arm_primary + iwi * arm_primary + s(iwi, bs = "cr", 
+  #                                         by = arm_primary),
+  #                data = df_analysis,
+   #               family = "gaussian", method = "REML")
+   # } 
+    ## Return a data frame with study_name and model
+   # data.frame(study = study_name, model = I(list(model)))
+  #})
+
+
+SS.Comb_exec_f <- df_analysis_exec_f %>%
+  split(.$study) %>%
+  map_dfr(function(df_analysis_exec_f) {
+    study_name <- unique(df_analysis_exec_f$study)
+    if (study_name %in% c("DOSE", "GHANA", "HAITI", "DYADG", "DYADM")) {
+      model <- gam(d12_execfun_el ~ arms_maternal + iwi * arms_maternal + s(iwi, bs = "cr", 
+                                           by = arms_maternal),
+                  data = df_analysis_exec_f,
+                  family = "gaussian", method = "REML")
+    } else {
+      model <- gam(d12_execfun_el ~ arms_maternal + iwi * arms_maternal + s(iwi, bs = "cr", 
+                                           by = arms_maternal) +
+                                          s(cluster, bs = "re", by = dummy),
+                  data = df_analysis_exec_f,
+                  family = "gaussian", method = "REML")
+    }
+    # Return a data frame with study_name and model
+    data.frame(study = study_name, model = I(list(model)))
+  })
+
+```
+
+```{r 3, echo = TRUE, warning = FALSE}
+
+new.data_exec_f <- df_analysis_exec_f %>%
+  select(study, cluster, arms_maternal) %>%
+  mutate(dummy = 0) %>%
+  distinct() %>%
+  expand_grid(iwi = seq(0, 70, by = 1)) 
+
+```
+
+
+```{r 4, echo = TRUE, warning = FALSE}
+
+predictions.SS.Comb_exec_f <- new.data_exec_f %>%
+  droplevels() %>%
+  arrange(desc(study)) %>%
+  group_by(study) %>%
+  nest() %>%
+  full_join(SS.Comb_exec_f, by = "study") %>%
+  group_by(study)%>% 
+  do(augment(.$model[[1]], newdata = .$data[[1]], se_fit =T)) 
+
+  
+# View the resulting dataframe
+print(predictions.SS.Comb_exec_f)
+
+#write_csv(predictions.SS.Comb, here::here("output", "predictions_SSComb.csv"))
+#write_csv(predictions.SS.Comb, here::here("output", "predictions_SSComb_nocluster.csv"))
+
+plot_study_exec_f <- predictions.SS.Comb_exec_f%>%
+  ggplot(., aes(iwi,.fitted, color= arms_maternal))+ 
+  geom_line(size=1.25)+ 
+  facet_wrap(.~study, ncol = 2, nrow = 3) + 
+  scale_colour_manual(values = c('darkgrey','darkblue')) + 
+  scale_fill_manual(values = c('darkgrey','darkblue')) + 
+  geom_ribbon(mapping = aes(ymin= .fitted - 1.96*.se.fit,
+                            ymax = .fitted + 1.96*.se.fit, 
+                            fill= arms_maternal), alpha= 0.1)+
+  ylab("Executive function score (female)") +
+  xlab("IWI") +
+  labs(color='Treatment',fill='Treatment') +
+  theme_minimal() +
+  theme(legend.position = c(0.15,0.95),
+          #"none",
+        legend.title = element_blank(),
+        axis.title.y = element_text(size = 18),
+        axis.title.x = element_text(size = 18),
+        strip.text = element_text(face="bold", size=14, hjust = 0.5),
+        axis.text.y = element_text(face="bold",  size=12),
+        axis.text.x = element_text(face="bold",  size=12)) 
+  
+print(plot_study_exec_f)
+
+```
+
+
+
+# Point-wise Meta-analysis
+
+```{r 5, echo = TRUE, warning = FALSE}
+
+# Create a new dataframe for the pointwise meta-analysis
+# Since the predicted outcomes are similar with or without the random effect for the cluster variable, and the model does not converge when the random effect is included, the random effect for the cluster variable was removed.
+new.data_exec_f <- df_analysis_exec_f %>%
+  select(study, cluster, arms_maternal) %>%
+  mutate(dummy = 0) %>%
+  mutate(cluster = rep(unique(cluster), length.out = 1)) %>%
+  distinct() %>%
+  expand_grid(iwi = seq(0, 70, by = 1)) 
+
+predictions.SS.Comb_exec_f <- new.data_exec_f %>%
+  droplevels() %>%
+  arrange(desc(study)) %>%
+  group_by(study) %>%
+  nest() %>%
+  full_join(SS.Comb_exec_f, by = "study") %>%
+  group_by(study)%>% 
+  do(augment(.$model[[1]], newdata = .$data[[1]], se_fit =T)) 
+
+point.wise.DF.SS.Comb_exec_f =  pointwise.ma(predictions.SS.Comb_exec_f,
+                                      clustering.variable = "study",
+                                      combining.variables = c("iwi","arms_maternal"), 
+                                      predicted.outcome =  ".fitted", 
+                                      predicted.outcome.se = ".se.fit", 
+                                      predicted.outcome.CI = NULL, 
+                                      tau.method = "REML")
+
+
+## Backtransform predicted outcomes and their corresponding confidence intervals
+point.wise.DF.SS.Comb_exec_f$RE.meta  =        
+  point.wise.DF.SS.Comb_exec_f$RE.meta
+point.wise.DF.SS.Comb_exec_f$RE.meta.upper  =  point.wise.DF.SS.Comb_exec_f$RE.meta.upper
+point.wise.DF.SS.Comb_exec_f$RE.meta.lower  =  point.wise.DF.SS.Comb_exec_f$RE.meta.lower
+
+
+
+```
+
+```{r 6, echo = TRUE, warning = FALSE}
+
+point.wise.DF.SS.Comb.plot_exec_f = point.wise.DF.SS.Comb_exec_f%>%
+  mutate(Treatment = as.factor(arms_maternal)) %>%
+  ggplot(aes(x = iwi, y = RE.meta, fill = Treatment, linetype = Treatment)) +
+  geom_line(size=0.5, aes(colour = Treatment))+
+  scale_color_manual(values = c('darkgrey','darkblue')) + 
+  scale_fill_manual(values = c('darkgrey','darkblue')) + 
+  geom_ribbon(aes(ymin = RE.meta.lower,ymax=RE.meta.upper),alpha=0.2) +
+  #scale_color_jama(name= "Treatment")+ 
+  #scale_linetype_discrete(name ="Treatment")+ylab("") + 
+  #scale_linetype_manual(values=c("solid","dashed")) +
+  labs(color='Treatment', fill='Treatment', linetype='Treatment') +
+  xlab(bquote('IWI')) +
+  ylab(bquote('Pooled executive function score (female)')) +
+  theme_minimal() +
+  theme(legend.position = c(0.20,0.95),
+        legend.title = element_blank(),
+        axis.title.y = element_text(size = 18),
+        axis.title.x = element_text(size = 18),
+        strip.text = element_text(face="bold", size=14, hjust = 0.5),
+        axis.text.y = element_text(face="bold",  size=12),
+        axis.text.x = element_text(face="bold",  size=12),
+        legend.key.size = unit(1, "cm"),
+        legend.key.width = unit(1,"cm"),
+        legend.text=element_text(size=10, hjust = 0)) +
+  scale_x_continuous(breaks = seq(min(point.wise.DF.SS.Comb_exec_f$iwi),  max(point.wise.DF.SS.Comb_exec_f$iwi), by = 10))
+
+
+print(point.wise.DF.SS.Comb.plot_exec_f)
+
+```
+
+```{r 7, echo = TRUE, warning = FALSE}
+
+# Save the plot
+#ggsave(here::here("output", "gam_pooled_pointwise_laz.png"),
+#       plot = point.wise.DF.SS.Comb.plot, width = 6, height = 6, dpi = 300)
+```
+
+
+# Absolute treatment effect
+
+```{r 8, echo = TRUE, warning = FALSE}
+
+predictions.SS.Comb_exec_f=predictions.SS.Comb_exec_f%>%
+  mutate(Lower =  .fitted - 1.96*.se.fit, 
+         Upper =  .fitted + 1.96*.se.fit)%>%
+  mutate(fit = .fitted, Lower =  Lower, Upper =  Upper) %>%
+  mutate(iwi =  as.character(iwi)) 
+
+
+absolute_diff_SS.Comb_exec_f = risk.diff.creator(dataframe = predictions.SS.Comb_exec_f,
+                                          treatment = "arms_maternal", outcome = NULL,
+                                          matching.variables = c("iwi","study"),
+                                          predicted.outcome = "fit", 
+                                          predicted.CI = c("Lower","Upper"))
+
+
+absolute_diff_SS.Comb_exec_f=  absolute_diff_SS.Comb_exec_f%>%
+  select(study, iwi, fit.diff, diff.lower, diff.upper)
+
+```
+
+```{r 9, echo = TRUE, warning = FALSE}
+
+point.wise.absolute_diff_SS.Comb_exec_f  =  pointwise.ma(data = absolute_diff_SS.Comb_exec_f,
+                                                  clustering.variable = "study",
+                                                  combining.variables = c("iwi"),
+                                                  predicted.outcome = "fit.diff",
+                                                  predicted.outcome.se = NULL,
+                                                  predicted.outcome.CI = c("diff.lower","diff.upper"),
+                                                  tau.method = "REML"
+)
+point.wise.absolute_diff_SS.Comb_exec_f =  point.wise.absolute_diff_SS.Comb_exec_f%>%
+  mutate(iwi =  as.numeric(iwi))
+
+```
+
+
+```{r 10, echo = TRUE, warning = FALSE}
+
+point.wise.DF.SS.Comb.diff.plot_exec_f=point.wise.absolute_diff_SS.Comb_exec_f%>%
+  ggplot(aes(x = iwi,y=RE.meta)) + geom_line(size=0.5)+
+  geom_ribbon(mapping = aes(ymin=RE.meta.lower, ymax=RE.meta.upper),alpha=0.25,
+              color="brown", fill="brown")+
+  geom_hline(yintercept = 0, linetype=2)+ylab("") + 
+  xlab(bquote('IWI')) +
+  ylab(bquote('Absolute difference')) +
+  theme_minimal() +
+  theme(axis.title.y = element_text(size = 18),
+        axis.title.x = element_text(size = 18),
+        strip.text = element_text(face="bold", size=14, hjust = 0.5),
+        axis.text.y = element_text(face="bold",  size=12),
+        axis.text.x = element_text(face="bold",  size=12)) + ylim(c(-0.4,0.3)) +
+  scale_x_continuous(breaks = seq(min(point.wise.absolute_diff_SS.Comb_exec_f$iwi),  max(point.wise.absolute_diff_SS.Comb_exec_f$iwi), by = 10))
+
+
+print(point.wise.DF.SS.Comb.diff.plot_exec_f)
+
+```
+
+```{r 11, echo = TRUE, warning = FALSE}
+
+point.wise.Q.plot_exec_f=point.wise.absolute_diff_SS.Comb_exec_f%>%
+  ggplot(aes(x = iwi,y=Q)) + geom_line(size=1)+
+  xlab(bquote('IWI')) +
+  theme_minimal()
+
+print(point.wise.Q.plot_exec_f)
+
+point.wise.pvalQ.plot_exec_f=point.wise.absolute_diff_SS.Comb_exec_f%>%
+  ggplot(aes(x = iwi,y=pval.Q)) + geom_line(size=1)+
+  xlab(bquote('IWI')) +
+  theme_minimal()
+
+print(point.wise.pvalQ.plot_exec_f)
+
+
+plot_composite_hetero_exec_f <- plot_grid(point.wise.Q.plot_exec_f, point.wise.pvalQ.plot_exec_f,
+                               nrow=2, align = "h") 
+plot_composite_hetero_exec_f
+
+```
+
+```{r 12, echo = TRUE, warning = FALSE}
+
+# Save the plot
+#ggsave(here::here("output", "qplot_pooled_pointwise_laz.png"),
+#       plot = point.wise.Q.plot, width = 6, height = 6, dpi = 300)
+```
+
+
+```{r 15, echo = TRUE, warning = FALSE}
+
+plot_comp_effect_exec_f <- plot_grid(point.wise.DF.SS.Comb.plot_exec_f, point.wise.DF.SS.Comb.diff.plot_exec_f, ncol = 1, labels = c("B", "C"))
+
+
+plot_composite_exec_f <- plot_grid(plot_study_exec_f, plot_comp_effect_exec_f,
+                               ncol=2, labels = c("A", "", "")) 
+
+plot_composite_exec_f
+
+
+```
+
+```{r 16, echo = TRUE, warning = FALSE}
+
+# Save the plot
+#ggsave(here::here("output", "gam_pooled_pointwise_d12_execfun_el_arm_maternal.png"),
+   #    plot = plot_composite_exec, width = 14, height = 16, dpi = 300)
+```
+
+
+Session info
+
+```{r session info, echo = TRUE, warning = FALSE}
+sessionInfo()
+  
+```

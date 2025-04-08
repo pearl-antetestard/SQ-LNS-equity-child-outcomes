@@ -1,20 +1,19 @@
-
-### Pearl Ante-Testard
-### email: pearl.ante@ucsf.edu
-
+## Author: Pearl Ante-Testard
+## email: pearl.ante@ucsf.edu
 
 ### Functions
-### This is based on the article by Belias et al. (2022): https://onlinelibrary.wiley.com/doi/10.1002/jrsm.1546
+
 
 ### The following function will calculate the risk differences between interventions
 ### The output is a data.frame with the risk differences
 
 risk.diff.creator =  function(dataframe = NULL,          ### Provide the data-set with the predicted outcomes
-                              treatment = NULL,       ### Provide the name of the intervention variable
+                              treatment = "treat",       ### Provide the name of the intervention variable
                               matching.variables=  NULL, ### Provide the names of any other predictors 
                               outcome= NULL,             ### Provide the name of the outcome 
                               predicted.outcome = NULL,  ### Provide the name of the predicted outcome
                               predicted.CI = NULL){      ### Provide the name of the confidence intervals of the predicted outcome
+  
   
   
   

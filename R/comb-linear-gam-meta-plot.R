@@ -1,139 +1,20 @@
+## Author: Pearl Ante-Testard
+## email: pearl.ante@ucsf.edu
 
-
-rm(list=ls(all=TRUE))
+#rm(list=ls(all=TRUE))
 
 source(here::here("R", "0-config.R"))
 
 render(here::here("R", "gam-meta-analysis",
                   "pointwise-pooled-laz-arm-maternal.Rmd"))
 
-
-render(here::here("R", "linear-interaction-laz.Rmd"))
-
-
-# Combine the data from both sources
-#combined_data <- bind_rows(
- # point.wise.absolute_diff_SS.Comb_laz %>% mutate(Model = "GAM"),
- # point.wise.absolute_diff %>% mutate(Model = "linear 1")
-#)
-
-#point.wise.absolute_diff_SS.Comb_laz <- point.wise.absolute_diff_SS.Comb_laz %>% mutate(Model = "GAM")
-#plot_diff <- plot_diff %>% mutate(Model = "linear 2")
-#absolute_diff <- absolute_diff %>% mutate(Model = "linear 3")
+render(here::here("R", "linear-meta-analysis",
+                  "linear-interaction-laz.Rmd"))
 
 
-# Method 1
-#combined_plot_1 <- ggplot() + 
-#  geom_line(data = combined_data, aes(x = iwi, y = RE.meta, color = Model, linetype = Model), size = 0.5) +
-#  geom_line(data = combined_data, aes(x = iwi, y = RE.meta, color = Model, linetype = Model), size = 0.5) +
-#  geom_ribbon(data = filter(combined_data, Model == "GAM"), aes(x = iwi, ymin = RE.meta.lower, ymax = RE.meta.upper, fill = Model), alpha = 0.25) +
-# geom_ribbon(data = filter(combined_data, Model == "linear 1"), aes(x = iwi, ymin = RE.meta.lower, ymax = RE.meta.upper, fill = Model), alpha = 0.1) +
-# geom_hline(yintercept = 0, linetype = 2) +
-#  xlab(bquote('IWI')) +
-#  ylab(bquote('Absolute difference')) +
-#  theme_minimal() +
-#  theme(
- #   axis.title.y = element_text(size = 18),
-  #  axis.title.x = element_text(size = 18),
-  #  strip.text = element_text(face = "bold", size = 14, hjust = 0.5),
-  #  axis.text.y = element_text(face = "bold", size = 12),
-   # axis.text.x = element_text(face = "bold", size = 12)
- # ) +
- # ylim(c(-0.15, 0.4)) +
- # annotate(
-  #  "text", 
-  #  x = min(point.wise.absolute_diff$iwi) * 0.8, 
-  #  y = max(point.wise.absolute_diff$RE.meta.upper), 
-  #  label = paste("pooled p-for-interaction from linear model:", round(as.numeric(unique(laz_eff_df_wide$pval.random)), 3)), 
-   # hjust = 0, 
-   # vjust = 1, 
-   # size = 3, 
-   # color = "black"
-  #) +
-  #scale_color_manual(values = c("GAM" = "brown", "linear 1" = "black")) +
-  #scale_fill_manual(values = c("GAM" = "brown", "linear 1" = "black")) +
-  #scale_x_continuous(breaks = seq(min(combined_data$iwi), max(combined_data$iwi), by = 10))
-  #scale_linetype_manual(values = c("GAM" = "solid", "linear" = "dashed"))
-
-# Print the combined plot
-#print(combined_plot_1)
-
-
-# Method 2
-
-#combined_plot_2 <- ggplot() + 
-#  geom_line(data = point.wise.absolute_diff_SS.Comb_laz, aes(x = iwi, y = RE.meta, color = Model, linetype = Model), size = 0.5) +
- # geom_line(data = plot_diff, aes(x = iwi, y = delta_y, color = Model, linetype = Model), size = 0.5) +
- # geom_ribbon(data = filter(point.wise.absolute_diff_SS.Comb_laz, Model == "GAM"), aes(x = iwi, ymin = RE.meta.lower, ymax = RE.meta.upper, fill = Model), alpha = 0.25) +
- # geom_ribbon(data = filter(plot_diff, Model == "linear 2"), aes(x = iwi, ymin = ci_lower, ymax = ci_upper, fill = Model), alpha = 0.1) +
- # geom_hline(yintercept = 0, linetype = 2) +
- # xlab(bquote('IWI')) +
-  #ylab(bquote('Absolute difference')) +
-  #theme_minimal() +
-  #theme(
-   # axis.title.y = element_text(size = 18),
-   # axis.title.x = element_text(size = 18),
-   # strip.text = element_text(face = "bold", size = 14, hjust = 0.5),
-   # axis.text.y = element_text(face = "bold", size = 12),
-   # axis.text.x = element_text(face = "bold", size = 12)
-  #) +
-  #ylim(c(-0.15, 0.4)) +
-  #annotate(
-   # "text", 
-   # x = min(plot_diff$iwi) * 0.8, 
-   # y = max(plot_diff$ci_upper), 
-   # label = paste("pooled p-for-interaction from linear model:", round(as.numeric(unique(laz_eff_df_wide$pval.random)), 3)), 
-   # hjust = 0, 
-   # vjust = 1, 
-   # size = 3, 
-   # color = "black"
-  #) +
-  #scale_color_manual(values = c("GAM" = "brown", "linear 2" = "black")) +
-  #scale_fill_manual(values = c("GAM" = "brown", "linear 2" = "black")) +
-  #scale_x_continuous(breaks = seq(min(point.wise.absolute_diff_SS.Comb_laz$iwi), max(point.wise.absolute_diff_SS.Comb_laz$iwi), by = 10))
-
-# Print the combined plot
-#print(combined_plot_2) 
-
-
-# Method 3
-
-#combined_plot_3 <- ggplot() + 
-#  geom_line(data = point.wise.absolute_diff_SS.Comb_laz, aes(x = iwi, y = RE.meta, color = Model, linetype = Model), size = 0.5) +
-#  geom_line(data = absolute_diff, aes(x = iwi, y = fit.diff, color = Model, linetype = Model), size = 0.5) +
-#  geom_ribbon(data = filter(point.wise.absolute_diff_SS.Comb_laz, Model == "GAM"), aes(x = iwi, ymin = RE.meta.lower, ymax = RE.meta.upper, fill = Model), alpha = 0.25) +
-#  geom_ribbon(data = filter(absolute_diff, Model == "linear 3"), aes(x = iwi, ymin = diff.lower, ymax = diff.upper, fill = Model), alpha = 0.1) +
- # geom_hline(yintercept = 0, linetype = 2) +
- # xlab(bquote('IWI')) +
- # ylab(bquote('Absolute difference')) +
- # theme_minimal() +
- # theme(
-  #  axis.title.y = element_text(size = 18),
-  #  axis.title.x = element_text(size = 18),
-  #  strip.text = element_text(face = "bold", size = 14, hjust = 0.5),
-  #  axis.text.y = element_text(face = "bold", size = 12),
-  #  axis.text.x = element_text(face = "bold", size = 12)
-  #) +
-  #ylim(c(-0.15, 0.4)) +
-  #annotate(
-  #  "text", 
-  #  x = min(absolute_diff$iwi) * 0.8, 
-  #  y = max(absolute_diff$diff.upper), 
-   # label = paste("pooled p-for-interaction from linear model:", round(as.numeric(unique(laz_eff_df_wide$pval.random)), 3)), 
-   # hjust = 0, 
-   # vjust = 1, 
-   # size = 3, 
-   # color = "black"
-  #) +
-  #scale_color_manual(values = c("GAM" = "brown", "linear 3" = "black")) +
-  #scale_fill_manual(values = c("GAM" = "brown", "linear 3" = "black")) +
-  #scale_x_continuous(breaks = seq(min(point.wise.absolute_diff_SS.Comb_laz$iwi), max(point.wise.absolute_diff_SS.Comb_laz$iwi), by = 10))
-
-# Print the combined plot
-#print(combined_plot_3) 
-
-
-# Method 4
+##############
+##############
+### LAZ
 
 point.wise.absolute_diff_SS.Comb_laz <- point.wise.absolute_diff_SS.Comb_laz %>% mutate(Model = "GAM")
 plot_diff <- plot_diff %>% mutate(Model = "linear")
@@ -197,7 +78,8 @@ render(here::here("R", "gam-meta-analysis",
                   "pointwise-pooled-wlz-arm-maternal.Rmd"))
 
 
-render(here::here("R", "linear-interaction-wlz.Rmd"))
+render(here::here("R", "linear-meta-analysis",
+                  "linear-interaction-wlz.Rmd"))
 
 
 point.wise.absolute_diff_SS.Comb_wlz <- point.wise.absolute_diff_SS.Comb_wlz %>% mutate(Model = "GAM")
@@ -251,7 +133,8 @@ render(here::here("R", "gam-meta-analysis",
                   "pointwise-pooled-stunted-arm-maternal.Rmd"))
 
 
-render(here::here("R", "linear-interaction-stunted.Rmd"))
+render(here::here("R", "linear-meta-analysis",
+                  "linear-interaction-stunted.Rmd"))
 
 point.wise.absolute_diff_SS.Comb_stunted <- point.wise.absolute_diff_SS.Comb_stunted %>% mutate(Model = "GAM")
 plot_diff <- plot_diff %>% mutate(Model = "linear")
@@ -304,7 +187,8 @@ render(here::here("R", "gam-meta-analysis",
                   "pointwise-pooled-wasted-arm-maternal.Rmd"))
 
 
-render(here::here("R", "linear-interaction-wasted.Rmd"))
+render(here::here("R", "linear-meta-analysis",
+                  "linear-interaction-wasted.Rmd"))
 
 
 point.wise.absolute_diff_SS.Comb_wasted <- point.wise.absolute_diff_SS.Comb_wasted %>% mutate(Model = "GAM")
@@ -357,7 +241,8 @@ print(combined_plot_wasted)
 render(here::here("R", "gam-meta-analysis",
                   "pointwise-pooled-severe-stunted-arm-maternal.Rmd"))
 
-render(here::here("R", "linear-interaction-severe-stunted.Rmd"))
+render(here::here("R", "linear-meta-analysis",
+                  "linear-interaction-severe-stunted.Rmd"))
 
 
 point.wise.absolute_diff_SS.Comb_severe_stunted <- point.wise.absolute_diff_SS.Comb_severe_stunted %>% mutate(Model = "GAM")
@@ -410,7 +295,8 @@ print(combined_plot_severe_stunted)
 render(here::here("R", "gam-meta-analysis",
                   "pointwise-pooled-language-arm-maternal.Rmd"))
 
-render(here::here("R", "linear-interaction-language.Rmd"))
+render(here::here("R", "linear-meta-analysis",
+                  "linear-interaction-language.Rmd"))
 
 
 point.wise.absolute_diff_SS.Comb_language <- point.wise.absolute_diff_SS.Comb_language %>% mutate(Model = "GAM")
@@ -463,7 +349,8 @@ print(combined_plot_language)
 render(here::here("R", "gam-meta-analysis",
                   "pointwise-pooled-gross-motor-arm-maternal.Rmd"))
 
-render(here::here("R", "linear-interaction-gross.Rmd"))
+render(here::here("R", "linear-meta-analysis",
+                  "linear-interaction-gross.Rmd"))
 
 
 point.wise.absolute_diff_SS.Comb_gross <- point.wise.absolute_diff_SS.Comb_gross %>% mutate(Model = "GAM")
@@ -516,7 +403,8 @@ print(combined_plot_gross)
 render(here::here("R", "gam-meta-analysis",
                   "pointwise-pooled-fine-motor-arm-maternal.Rmd"))
 
-render(here::here("R", "linear-interaction-fine.Rmd"))
+render(here::here("R", "linear-meta-analysis",
+                  "linear-interaction-fine.Rmd"))
 
 point.wise.absolute_diff_SS.Comb_fine <- point.wise.absolute_diff_SS.Comb_fine %>% mutate(Model = "GAM")
 plot_diff <- plot_diff %>% mutate(Model = "linear")
@@ -568,7 +456,8 @@ print(combined_plot_fine)
 render(here::here("R", "gam-meta-analysis",
                   "pointwise-pooled-executive-function-arm-maternal.Rmd"))
 
-render(here::here("R", "linear-interaction-exec.Rmd"))
+render(here::here("R", "linear-meta-analysis",
+                  "linear-interaction-exec.Rmd"))
 
 point.wise.absolute_diff_SS.Comb_exec <- point.wise.absolute_diff_SS.Comb_exec %>% mutate(Model = "GAM")
 plot_diff <- plot_diff %>% mutate(Model = "linear")
@@ -620,7 +509,8 @@ print(combined_plot_exec)
 render(here::here("R", "gam-meta-analysis",
                   "pointwise-pooled-socioemotional-score-arm-maternal.Rmd"))
 
-render(here::here("R", "linear-interaction-socioemo.Rmd"))
+render(here::here("R", "linear-meta-analysis",
+                  "linear-interaction-socioemo.Rmd"))
 
 point.wise.absolute_diff_SS.Comb_socioemo <- point.wise.absolute_diff_SS.Comb_socioemo %>% mutate(Model = "GAM")
 plot_diff <- plot_diff %>% mutate(Model = "linear")
@@ -672,7 +562,8 @@ print(combined_plot_socioemo)
 render(here::here("R", "gam-meta-analysis",
                   "pointwise-pooled-hemoglobin-arm-maternal.Rmd"))
 
-render(here::here("R", "linear-interaction-hgb.Rmd"))
+render(here::here("R", "linear-meta-analysis",
+                  "linear-interaction-hgb.Rmd"))
 
 point.wise.absolute_diff_SS.Comb_hgb <- point.wise.absolute_diff_SS.Comb_hgb %>% mutate(Model = "GAM")
 plot_diff <- plot_diff %>% mutate(Model = "linear")
@@ -725,7 +616,8 @@ print(combined_plot_hgb)
 render(here::here("R", "gam-meta-analysis",
                   "pointwise-pooled-anemia-arm-maternal.Rmd"))
 
-render(here::here("R", "linear-interaction-anemia.Rmd"))
+render(here::here("R", "linear-meta-analysis",
+                  "linear-interaction-anemia.Rmd"))
 
 point.wise.absolute_diff_SS.Comb_anemia <- point.wise.absolute_diff_SS.Comb_anemia %>% mutate(Model = "GAM")
 plot_diff <- plot_diff %>% mutate(Model = "linear")

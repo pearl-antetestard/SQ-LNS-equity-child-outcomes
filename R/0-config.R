@@ -19,6 +19,7 @@ library(tidyverse)
 library(readxl)
 library(skimr)
 library(rmarkdown)
+library(stringr)
 
 #----------------------------
 # data visualization packages

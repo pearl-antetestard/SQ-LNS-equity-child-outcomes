@@ -1,0 +1,222 @@
+---
+title: "Linear regression - interaction between treatment and maternal education - wlz"
+author: "Pearl Ante-Testard"
+date: "`r Sys.Date()`"
+output: pdf_document
+knit: (function(inputFile, encoding) {
+        rmarkdown::render(inputFile, 
+                          encoding   = encoding, 
+                          output_dir = here::here("output")
+                          )})
+---
+
+
+```{r clean environment, echo=FALSE}
+
+rm(list=ls(all=TRUE))
+
+```
+
+```{r packages and functions, echo = TRUE, warning = FALSE}
+
+source(here::here("R", "0-config.R"))
+
+```
+
+```{r read formatted data, echo=TRUE, warning=FALSE}
+
+df_analysis_wlz <- readRDS(file = here::here("data", "1-final", "df_analysis_iwi.rds")) %>% 
+  dplyr::mutate(study = sub("s[0-9]*_", "", study.x)) %>%
+  select(study, pid, region, cluster, arms_maternal, raw_mateducat, wlz_el, iwi) %>%
+  dplyr::filter(!is.na(raw_mateducat)) %>%
+  dplyr::filter(!is.na(arms_maternal)) %>%
+  dplyr::filter(!is.na(wlz_el)) %>%
+  dplyr::mutate(
+    arms_maternal = factor(arms_maternal, levels = c(0, 1), labels = c("Control", "SQ-LNS")),
+    mateduc_cat = case_when(
+      raw_mateducat %in% c(0, 1) ~ "No/incomplete primary",
+      raw_mateducat %in% c(2, 3) ~ "Complete primary/inc.secondary",
+      raw_mateducat %in% c(4) ~ "Secondary or greater"
+    ),
+    mateduc_cat = factor(mateduc_cat, levels = c("No/incomplete primary", "Complete primary/inc.secondary", "Secondary or greater")),
+    mateduc_num = case_when(
+      raw_mateducat == 0 ~ 0,
+      raw_mateducat == 1 ~ 1,
+      raw_mateducat %in% c(2, 3, 4) ~ 2
+    ),
+    mateduc_num = as.numeric(mateduc_num),
+    iwi = as.numeric(iwi),
+    cluster = factor(cluster),
+    region = factor(region),
+    study = factor(study)
+  )
+
+# Print the first few rows of the dataframe to verify
+head(df_analysis_wlz)
+
+table(df_analysis_wlz$study, df_analysis_wlz$mateduc_cat)
+        
+```
+
+# Fit linear regression with the interaction term between arms_maternal and IWI.
+
+## Here, we used lm_robust() to be able to account for clustering in the data when applicable.
+
+```{r interaction results, echo=TRUE, warning=FALSE}
+
+# Fit the simpler model without interaction
+model_noint <- lm_robust(wlz_el ~ mateduc_cat + arms_maternal, data = df_analysis_wlz,
+                         clusters = study)
+
+# Fit the more complex model with interaction
+model_int <- lm_robust(wlz_el ~ mateduc_cat + arms_maternal + mateduc_cat * arms_maternal, data = df_analysis_wlz, clusters = study)
+
+# Perform the Wald test
+waldtest_result <- waldtest(model_int, model_noint)
+
+# Print the result
+print(waldtest_result)
+
+```
+
+
+```{r interaction results, echo=TRUE, warning=FALSE}
+
+inter <- df_analysis_wlz %>%
+  split(.$study) %>%
+  map_dfr(function(df_analysis_wlz) {
+    study_name <- unique(df_analysis_wlz$study)
+    results <- list()
+    
+    if (study_name %in% c("DOSE", "GHANA", "HAITI", "DYADG", "DYADM")) {
+      model <- lm_robust(wlz_el ~ mateduc_cat + arms_maternal + 
+                           mateduc_cat * arms_maternal, 
+                         data = df_analysis_wlz)
+      
+      beta_interaction_treat_primary_incSecondary <- coef(model)["mateduc_catComplete primary/inc.secondary:arms_maternalSQ-LNS"]
+      model_summary <- summary(model)
+      ci_lower_primary_incSecondary <- model_summary$coefficients["mateduc_catComplete primary/inc.secondary:arms_maternalSQ-LNS", "CI Lower"]
+      ci_upper_primary_incSecondary <- model_summary$coefficients["mateduc_catComplete primary/inc.secondary:arms_maternalSQ-LNS", "CI Upper"]
+      se_primary_incSecondary <- model_summary$coefficients["mateduc_catComplete primary/inc.secondary:arms_maternalSQ-LNS", "Std. Error"]
+      
+      beta_interaction_treat_secondary_greater <- coef(model)["mateduc_catSecondary or greater:arms_maternalSQ-LNS"]
+      model_summary <- summary(model)
+      ci_lower_secondary_greater <- model_summary$coefficients["mateduc_catSecondary or greater:arms_maternalSQ-LNS", "CI Lower"]
+      ci_upper_secondary_greater <- model_summary$coefficients["mateduc_catSecondary or greater:arms_maternalSQ-LNS", "CI Upper"]
+      se_secondary_greater <- model_summary$coefficients["mateduc_catSecondary or greater:arms_maternalSQ-LNS", "Std. Error"]
+      
+      results$intervention <- list(inter_treat_primary_incSecondary = beta_interaction_treat_primary_incSecondary, 
+                                   ci_low_primary_incSecondary = ci_lower_primary_incSecondary, 
+                                   ci_up_primary_incSecondary = ci_upper_primary_incSecondary, 
+                                   se_primary_incSecondary = se_primary_incSecondary,
+                                   inter_treat_secondary_greater = 
+                                     beta_interaction_treat_secondary_greater, 
+                                   ci_low_secondary_greater = ci_lower_secondary_greater, 
+                                   ci_up_secondary_greater = ci_upper_secondary_greater, 
+                                   se_secondary_greater = se_secondary_greater
+                                   )
+      
+    } else {
+      model <- lm_robust(wlz_el ~ mateduc_cat + arms_maternal + mateduc_cat * arms_maternal, 
+                         data = df_analysis_wlz, clusters = cluster)
+      
+    beta_interaction_treat_primary_incSecondary <- coef(model)["mateduc_catComplete primary/inc.secondary:arms_maternalSQ-LNS"]
+      model_summary <- summary(model)
+      ci_lower_primary_incSecondary <- model_summary$coefficients["mateduc_catComplete primary/inc.secondary:arms_maternalSQ-LNS", "CI Lower"]
+      ci_upper_primary_incSecondary <- model_summary$coefficients["mateduc_catComplete primary/inc.secondary:arms_maternalSQ-LNS", "CI Upper"]
+      se_primary_incSecondary <- model_summary$coefficients["mateduc_catComplete primary/inc.secondary:arms_maternalSQ-LNS", "Std. Error"]
+      
+      beta_interaction_treat_secondary_greater <- coef(model)["mateduc_catSecondary or greater:arms_maternalSQ-LNS"]
+      model_summary <- summary(model)
+      ci_lower_secondary_greater <- model_summary$coefficients["mateduc_catSecondary or greater:arms_maternalSQ-LNS", "CI Lower"]
+      ci_upper_secondary_greater <- model_summary$coefficients["mateduc_catSecondary or greater:arms_maternalSQ-LNS", "CI Upper"]
+      se_secondary_greater <- model_summary$coefficients["mateduc_catSecondary or greater:arms_maternalSQ-LNS", "Std. Error"]
+      
+      results$intervention <- list(inter_treat_primary_incSecondary = beta_interaction_treat_primary_incSecondary, 
+                                   ci_low_primary_incSecondary = ci_lower_primary_incSecondary, 
+                                   ci_up_primary_incSecondary = ci_upper_primary_incSecondary, 
+                                   se_primary_incSecondary = se_primary_incSecondary,
+                                   inter_treat_secondary_greater = 
+                                     beta_interaction_treat_secondary_greater, 
+                                   ci_low_secondary_greater = ci_lower_secondary_greater, 
+                                   ci_up_secondary_greater = ci_upper_secondary_greater, 
+                                   se_secondary_greater = se_secondary_greater
+                                   )
+      
+    }
+    
+    # Create a data frame with the results
+    inter_tab <- data.frame(
+      study = study_name,
+      inter_treat_primary_incSecondary = round(results$intervention$inter_treat_primary_incSecondary, 3),
+      ci_low_primary_incSecondary = round(results$intervention$ci_low_primary_incSecondary, 3),
+      ci_up_primary_incSecondary = round(results$intervention$ci_up_primary_incSecondary, 3),
+      se_primary_incSecondaryy = round(results$intervention$se_primary_incSecondary, 3),
+      inter_treat_secondary_greater = round(results$intervention$inter_treat_secondary_greater, 3),
+      ci_low_secondary_greater = round(results$intervention$ci_low_secondary_greater, 3),
+      ci_up_secondary_greater = round(results$intervention$ci_up_secondary_greater, 3),
+      se_secondary_greater = round(results$intervention$se_secondary_greater, 3)
+    )
+    
+    return(inter_tab)
+  })
+
+print(inter)
+
+```
+
+# Meta-analysis of the slopes (arms_maternalSQ-LNS:maternal education) and their standard errors/confidence intervals from the original linear regression models
+
+## Using the slope/coefficients from the interaction term and standard error from the model (maternal education:arms_maternalSQ-LNS), we performed a random-effect meta-analysis to get the pooled slope and standard error.
+
+```{r meta, echo=TRUE, warning=FALSE}
+
+# Define the tau.method
+tau.method <- "REML"
+
+meta1_primary_incSecondary <- metagen(
+    TE = inter$inter_treat_primary_incSecondary,
+    seTE = inter$se_primary_incSecondary,
+    lower = inter$ci_low_primary_incSecondary,
+    upper = inter$ci_up_primary_incSecondary,
+    method.tau = tau.method,
+    hakn = FALSE,
+    studlab = inter$study
+  )
+
+forest_meta_primary_incSecondary <- forest(meta1_primary_incSecondary, 
+       layout = "JAMA", 
+       leftlabs = c("Study", "wlz_el (primary/inc.Secondary:arms_maternalSQ-LNS) [95% CI]"),
+       label.right = "Favorable", 
+       label.left = "Unfavorable",
+       digits = 3,
+       prediction.subgroup = inter$arms_maternal)
+forest_meta_primary_incSecondary
+
+
+meta1_secondary_greater <- metagen(
+    TE = inter$inter_treat_secondary_greater,
+    seTE = inter$se_secondary_greater,
+    lower = inter$ci_low_secondary_greater,
+    upper = inter$ci_up_secondary_greater,
+    method.tau = tau.method,
+    hakn = FALSE,
+    studlab = inter$study
+  )
+
+forest_meta_secondary_greater <- forest(meta1_secondary_greater, 
+       layout = "JAMA", 
+       leftlabs = c("Study", "wlz_el (secondary/greater:arms_maternalSQ-LNS) [95% CI]"),
+       label.right = "Favorable", 
+       label.left = "Unfavorable",
+       digits = 3,
+       prediction.subgroup = inter$arms_maternal)
+forest_meta_secondary_greater
+```
+
+
+# Session info
+```{r session info}
+
+sessionInfo()
+```

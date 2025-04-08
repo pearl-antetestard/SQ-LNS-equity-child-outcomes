@@ -1,0 +1,479 @@
+---
+title: "Linear regression - interaction between treatment and IWI - gross motor score, male"
+author: "Pearl Ante-Testard"
+date: "`r Sys.Date()`"
+output: pdf_document
+knit: (function(inputFile, encoding) {
+        rmarkdown::render(inputFile, 
+                          encoding   = encoding, 
+                          output_dir = here::here("output")
+                          )})
+---
+
+```{r clean environment, echo=FALSE}
+
+#rm(list=ls(all=TRUE))
+
+```
+
+```{r packages and functions, echo = TRUE, warning = FALSE}
+
+source(here::here("R", "0-config.R"))
+
+```
+
+```{r read formatted data, echo=FALSE}
+
+df_analysis_gross_m <- readRDS(file = here::here("data", "1-final",
+                      "df_analysis_iwi.rds")) %>% 
+  subset(female == 0) %>%
+  dplyr::mutate(study = sub("s[0-9]*_", "", study.x)) %>%
+  select(study, pid, region, cluster, arms_maternal, iwi, d8_grossmotor_el) %>% 
+  dplyr::filter(!is.na(iwi)) %>%
+  dplyr::filter(!is.na(arms_maternal)) %>%
+  dplyr::filter(!is.na(d8_grossmotor_el)) %>%
+  dplyr::mutate(arms_maternal = factor(arms_maternal, levels = c(0,1), 
+                              labels = c("Control","SQ-LNS")),
+         iwi = as.numeric(iwi),
+         cluster = factor(cluster),
+         region = factor(region),
+         study = factor(study))
+
+```
+
+
+# Fit linear regression with the interaction term between arms_maternal and IWI.
+
+## Here, we used lm_robust() to be able to account for clustering in the data when applicable.
+
+```{r interaction results, echo=TRUE, warning=FALSE}
+
+inter_m <- df_analysis_gross_m %>%
+  split(.$study) %>%
+  map_dfr(function(df_analysis_gross_m) {
+    study_name <- unique(df_analysis_gross_m$study)
+    results <- list()
+    
+    if (study_name %in% c("DOSE", "GHANA", "HAITI", "DYADG", "DYADM")) {
+      model <- lm_robust(d8_grossmotor_el ~ iwi + arms_maternal + iwi * arms_maternal, 
+                         data = df_analysis_gross_m)
+      
+      beta_interaction_treat_iwi <- coef(model)["iwi:arms_maternalSQ-LNS"]
+      model_summary <- summary(model)
+      ci_lower <- model_summary$coefficients["iwi:arms_maternalSQ-LNS", "CI Lower"]
+      ci_upper <- model_summary$coefficients["iwi:arms_maternalSQ-LNS", "CI Upper"]
+      se <- model_summary$coefficients["iwi:arms_maternalSQ-LNS", "Std. Error"]
+      
+      results$intervention <- list(inter_treat_iwi = beta_interaction_treat_iwi, 
+                                   ci_low = ci_lower, ci_up = ci_upper, se = se)
+      
+    } else {
+      model <- lm_robust(d8_grossmotor_el ~ iwi + arms_maternal + iwi * arms_maternal, 
+                         data = df_analysis_gross_m, clusters = cluster)
+      
+      beta_interaction_treat_iwi <- coef(model)["iwi:arms_maternalSQ-LNS"]
+      model_summary <- summary(model)
+      ci_lower <- model_summary$coefficients["iwi:arms_maternalSQ-LNS", "CI Lower"]
+      ci_upper <- model_summary$coefficients["iwi:arms_maternalSQ-LNS", "CI Upper"]
+      se <- model_summary$coefficients["iwi:arms_maternalSQ-LNS", "Std. Error"]
+      
+      results$intervention <- list(inter_treat_iwi = beta_interaction_treat_iwi, 
+                                   ci_low = ci_lower, ci_up = ci_upper, se = se)
+    }
+    
+    # Create a data frame with the results
+    inter_tab <- data.frame(
+      study = study_name,
+      inter_treat_iwi = round(results$intervention$inter_treat_iwi, 3),
+      ci_low = round(results$intervention$ci_low, 3),
+      ci_up = round(results$intervention$ci_up, 3),
+      se = round(results$intervention$se, 3)
+    )
+    
+    return(inter_tab)
+  })
+
+print(inter_m)
+
+```
+
+# Plotting the study slopes (arms_maternalSQ-LNS:iwi) and their confidence intervals
+
+## Here, we plotted the study slopes and their confidence intervals for the interaction term between arms_maternal and IWI for visualization.
+
+```{r study slopes, echo=TRUE, warning=FALSE}
+
+# Plot the study slope and its confidence interval
+ggplot(inter_m, aes(x = study, y = inter_treat_iwi)) +
+  geom_point(size = 3) +
+  geom_errorbar(aes(ymin = ci_low, ymax = ci_up), width = 0.1) +
+  labs(x = "Study", y = "d8_grossmotor_el (arms_maternalSQ-LNS:iwi)") +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+```
+
+# Meta-analysis of the slopes (arms_maternalSQ-LNS:iwi) and their standard errors/confidence intervals from the original linear regression models
+
+## Using the slope/coefficients from the interaction term and standard error from the model (iwi:arms_maternalSQ-LNS), we performed a random-effect meta-analysis to get the pooled slope and standard error.
+
+```{r meta, echo=TRUE, warning=FALSE}
+
+# Define the tau.method
+tau.method <- "REML"
+
+meta1_m <- metagen(
+    TE = inter_m$inter_treat_iwi,
+    seTE = inter_m$se,
+    lower = inter_m$ci_low,
+    upper = inter_m$ci_up,
+    method.tau = tau.method,
+    hakn = FALSE,
+    studlab = inter_m$study
+  )
+
+forest_meta_m <- forest(meta1_m, 
+       layout = "JAMA", 
+       leftlabs = c("Study", "d8_grossmotor_el (iwi:arms_maternalSQ-LNS) [95% CI]"),
+       label.right = "Favorable", 
+       label.left = "Unfavorable",
+       digits = 3,
+       prediction.subgroup = inter_m$arms_maternal)
+forest_meta_m
+```
+
+
+# Plotting the pooled slope (iwi:arms_maternalSQ-LNS) and its confidence interval
+
+```{r pooled slope, echo=TRUE, warning=FALSE}
+  
+laz_eff_m <- c(meta1_m$TE.random, meta1_m$upper.random, meta1_m$lower.random, 
+              meta1_m$seTE.random, meta1_m$Q, meta1_m$df.Q, meta1_m$I2, meta1_m$tau2,
+             meta1_m$pval.random)
+laz_eff_df_m <- as.data.frame(laz_eff_m)
+laz_eff_df_m$meta <- c("RE.meta", "RE.meta.upper", "RE.meta.lower", "RE.se",
+                       "RE.Q", "RE.df", "RE.I2", "RE.tau2", "pval.random")
+  
+laz_eff_df_wide_m <- laz_eff_df_m %>%
+                  pivot_wider(names_from = meta, values_from = laz_eff_m)
+laz_eff_df_wide_m$term <- "Slope"
+#laz_eff_df_wide$study <- "Pooled"
+  
+# Plot the pooled slope and its confidence interval
+pooled_slope_plot_m <- ggplot(aes(x = term, y = RE.meta), data = laz_eff_df_wide_m) +
+  geom_point(size = 3) +
+  geom_errorbar(aes(ymin = RE.meta.lower, ymax = RE.meta.upper), width = 0.1) +
+  labs(x = "Random-effect meta-analysis", y = "Pooled d8_grossmotor_el (iwi:arms_maternalSQ-LNS)") +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  theme_minimal()  +
+    annotate("text", x = 0.8, y = max(laz_eff_df_wide_m$RE.meta), 
+               label = paste("p-value:", 
+                             round(unique(laz_eff_df_wide_m$pval.random), 3)), 
+               hjust = 0, vjust = 1, size = 3, color = "black")
+pooled_slope_plot_m
+
+```
+
+
+# Predictions using the model fit from the linear regression
+
+## Using the model above, we generated predictions for a range of IWI values (0-70) for both study arms with confidence intervals. To do this, we first split the data by study, fit the model, and then generated predictions for each study separately. We also extracted the p-value for the interaction term (iwi:arms_maternalSQ-LNS) from the model summary and added it to the plot as an annotation. To make predictions for the control group, we set the arms_maternal variable to "Control" in the new data frame. To make predictions for the intervention group, we set the arms_maternal variable to "SQ-LNS" in the new data frame.
+
+## The interaction p-values are from the linear regression models with the interaction term (iwi:arms_maternalSQ-LNS). The p-values indicate whether the effect of IWI on wlz_el differs significantly between the SQ-LNS and control groups.
+
+```{r interaction pred, echo=TRUE, warning=FALSE}
+
+# Define a range of iwi values for prediction
+iwi_values <- seq(min(df_analysis_gross_m$iwi), by = 1, length.out = 71)
+
+# Fit the models and generate predictions for both groups with confidence intervals
+predictions_m <- df_analysis_gross_m %>%
+  split(.$study) %>%
+  map_dfr(function(df_analysis_gross_m) {
+    study_name <- unique(df_analysis_gross_m$study)
+    
+    if (study_name %in% c("DOSE", "GHANA", "HAITI", "DYADG", "DYADM")) {
+      model <- lm_robust(d8_grossmotor_el ~ iwi + arms_maternal + iwi * arms_maternal, 
+                         data = df_analysis_gross_m)
+    } else {
+      model <- lm_robust(d8_grossmotor_el ~ iwi + arms_maternal + iwi * arms_maternal, 
+                         data = df_analysis_gross_m, clusters = cluster)
+    }
+    
+    # Extract the p-value for the interaction term
+    p_value <- summary(model)$coefficients["iwi:arms_maternalSQ-LNS", "Pr(>|t|)"]
+    
+    # Generate predictions for a range of iwi values for both groups with confidence intervals
+    new_data_SQLNS <- expand.grid(iwi = iwi_values, arms_maternal = "SQ-LNS")
+    pred_SQLNS <- predict(model, newdata = new_data_SQLNS, interval = "confidence", level = 0.95)
+    new_data_SQLNS <- cbind(new_data_SQLNS, pred_SQLNS)
+    new_data_SQLNS$study <- study_name
+    new_data_SQLNS$p_value <- p_value
+    new_data_SQLNS$group <- "SQ-LNS"
+    
+    new_data_control <- expand.grid(iwi = iwi_values, arms_maternal = "Control")
+    pred_control <- predict(model, newdata = new_data_control, interval = "confidence", level = 0.95)
+    new_data_control <- cbind(new_data_control, pred_control)
+    new_data_control$study <- study_name
+    new_data_control$p_value <- p_value
+    new_data_control$group <- "Control"
+    
+    return(bind_rows(new_data_control, new_data_SQLNS))
+  })
+
+# Plot the interaction term for each study separately
+plots_m <- predictions_m %>%
+  split(.$study) %>%
+  map(function(data) {
+    ggplot(data, aes(x = iwi, y = fit.fit, color = arms_maternal)) +
+      geom_line() +
+      geom_errorbar(aes(ymin = fit.lwr, ymax = fit.upr, fill = group), alpha = 0.2) +
+      scale_color_manual(values = c('darkgrey','darkblue')) + 
+      scale_fill_manual(values = c('darkgrey','darkblue')) + 
+      theme_minimal() +
+      labs(title = paste("Interaction (iwi:arms_maternalSQ-LNS) -", unique(data$study)),
+           x = "IWI",
+           y = "Predicted d8_grossmotor_el",
+           color = "Treatment",
+           fill = "Treatment") +
+      annotate("text", x = max(data$iwi) * 0.8, y = max(data$fit.upr), 
+               label = paste("p-value:", round(unique(data$p_value), 3)), 
+               hjust = 0, vjust = 1, size = 3, color = "black")
+  })
+
+# Print the plots
+plots_m
+
+```
+
+
+```{r meta arms, echo=TRUE, warning=FALSE}
+
+point.wise.DF_m =  pointwise.ma(predictions_m,
+                                      clustering.variable = "study",
+                                      combining.variables = c("iwi","arms_maternal"), 
+                                      predicted.outcome =  "fit.fit", 
+                                      #predicted.outcome.se = "se.fit", 
+                                      predicted.outcome.CI = c("fit.lwr","fit.upr"),
+                                      tau.method = "REML")
+
+## Backtransform predicted outcomes and their corresponding confidence intervals
+point.wise.DF_m$RE.meta  =        point.wise.DF_m$RE.meta
+point.wise.DF_m$RE.meta.upper  =  point.wise.DF_m$RE.meta.upper
+point.wise.DF_m$RE.meta.lower  =  point.wise.DF_m$RE.meta.lower
+
+```
+
+
+```{r meta plot, echo = TRUE, warning = FALSE}
+
+point.wise.DF.plot_m = point.wise.DF_m %>%
+  mutate(Treatment = as.factor(arms_maternal)) %>%
+  ggplot(aes(x = iwi, y = RE.meta, fill = Treatment, linetype = Treatment)) +
+  geom_line(size=0.5, aes(colour = Treatment))+
+  scale_color_manual(values = c('darkgrey','darkblue')) + 
+  scale_fill_manual(values = c('darkgrey','darkblue')) + 
+  geom_ribbon(aes(ymin = RE.meta.lower,ymax=RE.meta.upper),alpha=0.2) +
+  #scale_color_jama(name= "Treatment")+ 
+  #scale_linetype_discrete(name ="Treatment")+ylab("") + 
+  #scale_linetype_manual(values=c("solid","dashed")) +
+  labs(color='Treatment', fill='Treatment', linetype='Treatment') +
+  xlab(bquote('IWI')) +
+  ylab(bquote('Pooled d8_grossmotor_el (male)')) +
+  theme_minimal() +
+  theme(legend.position = c(0.20,0.75),
+        legend.title = element_blank(),
+        axis.title.y = element_text(size = 18),
+        axis.title.x = element_text(size = 18),
+        strip.text = element_text(face="bold", size=14, hjust = 0.5),
+        axis.text.y = element_text(face="bold",  size=12),
+        axis.text.x = element_text(face="bold",  size=12),
+        legend.key.size = unit(1, "cm"),
+        legend.key.width = unit(1,"cm"),
+        legend.text=element_text(size=10, hjust = 0)) 
+
+
+
+print(point.wise.DF.plot_m)
+
+```
+
+
+```{r abs diff, echo=TRUE, warning=FALSE}
+
+predictions_m = predictions_m %>%
+  mutate(iwi =  as.character(iwi)) 
+
+
+absolute_diff_m = risk.diff.creator(dataframe = predictions_m,
+                                          treatment = "arms_maternal", outcome = NULL,
+                                          matching.variables = c("iwi","study"),
+                                          predicted.outcome = "fit.fit", 
+                                          predicted.CI = c("fit.lwr","fit.upr"))
+
+
+absolute_diff_m =  absolute_diff_m %>%
+  select(study, iwi, fit.diff, diff.lower, diff.upper)
+
+```
+
+
+```{r meta abs diff, echo=TRUE, warning=FALSE}
+
+point.wise.absolute_diff_m  =  pointwise.ma(data = absolute_diff_m,
+                                                  clustering.variable = "study",
+                                                  combining.variables = c("iwi"),
+                                                  predicted.outcome = "fit.diff",
+                                                  predicted.outcome.se = NULL,
+                                                  predicted.outcome.CI = c("diff.lower","diff.upper"),
+                                                  tau.method = "REML"
+)
+point.wise.absolute_diff_m =  point.wise.absolute_diff_m %>%
+  mutate(iwi =  as.numeric(iwi))
+
+```
+
+```{r meta abs diff plot, echo=TRUE, warning=FALSE}
+
+point.wise.diff.plot_m = point.wise.absolute_diff_m %>%
+  ggplot(aes(x = iwi,y=RE.meta)) + geom_line(size=0.5)+
+  geom_ribbon(mapping = aes(ymin=RE.meta.lower, ymax=RE.meta.upper),alpha=0.25,
+              color="brown", fill="brown")+
+  geom_hline(yintercept = 0, linetype=2)+ylab("") + 
+  xlab(bquote('IWI')) +
+  ylab(bquote('Absolute difference')) +
+  theme_minimal() +
+  theme(axis.title.y = element_text(size = 18),
+        axis.title.x = element_text(size = 18),
+        strip.text = element_text(face="bold", size=14, hjust = 0.5),
+        axis.text.y = element_text(face="bold",  size=12),
+        axis.text.x = element_text(face="bold",  size=12)) + ylim(c(-0.15,0.4)) +
+      annotate("text", x = min(point.wise.absolute_diff_m$iwi) * 0.8, 
+               y = max(point.wise.absolute_diff_m$RE.meta.upper), 
+               label = paste("interaction p-value:", 
+                             round(as.numeric(unique(laz_eff_df_wide_m$pval.random)),
+                                   3)), 
+               hjust = 0, vjust = 1, size = 3, color = "black")
+
+print(point.wise.diff.plot_m)
+
+
+```
+
+
+## 2nd method
+1. Extract data for each study and fit the regression model.
+2. Store the coefficients and variances from each model.
+3. Combine the coefficients and variances into matrices for all studies.
+4. Use random-effects meta-analysis to pool estimates for each coefficient, incorporating between-study variance.
+5. Extract pooled estimates and variances for use in subsequent analyses.
+
+```{r alt, echo=TRUE, warning=FALSE}
+
+study_list <- unique(df_analysis_gross_m$study)
+results_m <- lapply(study_list, function(study) {
+  df_study_m <- df_analysis_gross_m %>% filter(study == !!study)
+  
+  if (study %in% c("DOSE", "GHANA", "HAITI", "DYADG", "DYADM")) {
+    model_study <- lm_robust(d8_grossmotor_el ~ iwi + arms_maternal + iwi * arms_maternal, 
+                             data = df_study_m)
+  } else {
+    model_study <- lm_robust(d8_grossmotor_el ~ iwi + arms_maternal + iwi * arms_maternal, 
+                             data = df_study_m, clusters = cluster)
+  }
+  
+  list(
+    coefficients = coef(model_study), # Extracts regression coefficients for each study.
+    variances = diag(vcov(model_study)) # Extracts variances of the coefficients.
+  )
+})
+
+
+# Extract coefficients and variances for meta-analysis
+coefficients <- do.call(rbind, lapply(results_m, function(x) x$coefficients))
+variances <- do.call(rbind, lapply(results_m, function(x) x$variances))
+# do.call(rbind, ...) combines them into a matrix where rows represent studies and columns represent coefficient names (e.g., intercept, iwi, arms_maternal, and interaction term).
+
+```
+
+
+```{r meta alt, echo=TRUE, warning=FALSE}
+
+# Prepare pooled estimates
+# The lapply loop performs meta-analysis for each regression coefficient (e.g., intercept, iwi, arms_maternal, and interaction term).
+# Conducts random-effects meta-analysis for each coefficient, combining estimates across studies.
+pooled_estimates_m <- lapply(1:ncol(coefficients), function(i) {
+  metagen(
+    TE = coefficients[, i],
+    seTE = sqrt(unlist(variances)[, i]),
+    studlab = study_list, # Labels for the studies.
+    #sm = "MD",  # Mean difference
+    method.tau = "REML", # REML method to estimate between-study variance.
+    hakn = FALSE # Do not use Hartung-Knapp adjustment (alternative method for small sample sizes).
+  )
+})
+
+# Extract pooled coefficients and variances
+pooled_coefficients_m <- sapply(pooled_estimates_m, function(res) res$TE.random) # The pooled (random-effects) estimate for a specific coefficient.
+pooled_variances_m <- sapply(pooled_estimates_m, function(res) res$seTE.random^2) # The variance of the pooled estimate.
+names(pooled_coefficients_m) <- colnames(coefficients)
+names(pooled_variances_m) <- colnames(variances)
+
+```
+
+
+```{r meta alt abs diff, echo=TRUE, warning=FALSE}
+
+# Define IWI values
+iwi_vals <- seq(min(df_analysis_gross_m$iwi), by = 1, length.out = 71)
+# length.out = 71 generates 71 evenly spaced values in this range including 0 (0-70). These values will be used to calculate predictions at different points along the range of iwi.
+
+# Absolute difference
+delta_y_m <- pooled_coefficients_m["arms_maternalSQ-LNS"] + pooled_coefficients_m["iwi:arms_maternalSQ-LNS"] * iwi_vals
+#delta_y represents the predicted difference in outcomes between the two groups (arms_maternal = 1 and arms_maternal = 0) as a function of iwi.
+#This is derived from the pooled regression coefficients:
+#arms_maternalSQ-LNS: The coefficient for the group effect (the difference at iwi = 0).
+#iwi:arms_maternalSQ-LNS: The coefficient for the interaction term, which captures how the effect of arms_maternal changes as iwi changes.
+
+```
+
+
+```{r meta alt plot, echo=TRUE, warning=FALSE}
+
+# Create data for absolute difference
+plot_diff_m <- data.frame(
+  iwi = iwi_vals,
+  delta_y_m = delta_y_m
+)
+
+# Plot
+plot_diff_m %>%
+  ggplot(aes(x = iwi, y = delta_y_m)) + geom_line(size=0.5)+
+  #geom_ribbon(aes(ymin = ci_lower, ymax = ci_upper), alpha = 0.25,
+             # color="brown", fill="brown") +
+  geom_hline(yintercept = 0, linetype=2)+ylab("") + 
+  xlab(bquote('IWI')) +
+  ylab(bquote('Absolute difference')) +
+  theme_minimal() +
+  theme(axis.title.y = element_text(size = 18),
+        axis.title.x = element_text(size = 18),
+        strip.text = element_text(face="bold", size=14, hjust = 0.5),
+        axis.text.y = element_text(face="bold",  size=12),
+        axis.text.x = element_text(face="bold",  size=12)) + #+ ylim(c(-0.15,0.4)) +
+      annotate("text", x = min(point.wise.absolute_diff_m$iwi) * 0.8, 
+               y = max(point.wise.absolute_diff_m$RE.meta.upper), 
+               label = paste("interaction p-value:", 
+                             round(as.numeric(unique(laz_eff_df_wide_m$pval.random)),
+                                   3)), 
+               hjust = 0, vjust = 1, size = 3, color = "black")
+  
+```
+
+
+# Session info
+```{r session info}
+
+sessionInfo()
+```

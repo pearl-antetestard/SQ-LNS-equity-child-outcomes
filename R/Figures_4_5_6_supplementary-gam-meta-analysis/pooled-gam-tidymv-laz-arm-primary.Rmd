@@ -1,0 +1,283 @@
+---
+title: "Absolute treatment effect by GAMM - stunted"
+author: "Pearl Ante-Testard"
+date: "`r Sys.Date()`"
+output: pdf_document
+  #officedown::rdocx_document
+   # theme: default
+    #highlight: default
+    #code_folding: hide
+    #toc: true
+    #toc_depth: 3,,
+    #toc_float:
+      #collapsed: true
+      #smooth_scroll: true
+knit: (function(inputFile, encoding) {
+        rmarkdown::render(inputFile, 
+                          encoding   = encoding, 
+                          output_dir = here::here("output")
+                          )})
+---
+
+
+Intervention: arm_primary
+
+
+```{r setup, include=FALSE}
+
+rm(list = ls(all = TRUE))
+```
+
+
+```{r library, echo = TRUE, warning = FALSE}
+
+# Load libraries
+library(tidyverse)
+#remotes::install_github("stefanocoretta/tidygam@devel", force = TRUE) # nolint
+library(tidymv)
+library(tidygam)
+library(mgcv)
+library(here)
+library(haven)
+library(gridExtra)
+library(ggrepel)
+library(cowplot)
+library(ggsci)
+library(RColorBrewer)
+
+```
+
+
+```{r data,echo = TRUE, warning = FALSE}
+
+df_analysis <- readRDS(file = here::here("data", "1-final",
+                      "df_analysis_iwi.rds")) %>% 
+  mutate(study = sub("s[0-9]*_", "", study.x)) %>%
+  select(study, pid, cluster, arm_primary, iwi, laz_el) %>% 
+  dplyr::filter(!is.na(iwi)) %>%
+  mutate(iwi = case_when(iwi < 70 ~ iwi)) %>%
+  dplyr::filter(!is.na(arm_primary)) %>%
+  dplyr::filter(!is.na(laz_el)) %>%
+  mutate(arm_primary = factor(arm_primary, levels = c(0,1), 
+                              labels = c("Control","Intervention")),
+         iwi = as.numeric(iwi),
+         cluster = factor(cluster),
+         laz_el = as.numeric(laz_el),
+         dummy = rep(1, n()))
+
+```
+
+Note: DYADG and DYADM have empty rows for arm_primary -- why? These are the studies that had maternal interventions. Removing them from the analysis.
+
+```{r 2, echo = TRUE, warning = FALSE}
+
+# Remove studies "DYADG" and "DYADM"
+df_analysis <- subset(df_analysis, !(study %in% c("DYADG", "DYADM")))
+```
+
+
+```{r 3, echo = TRUE, warning = FALSE}
+
+# Get the smooth differences
+smooth_differences <- df_analysis %>%
+  dplyr::filter(!is.na(laz_el)) %>%
+  split(.$study) %>%
+  map(function(df_analysis) {
+    study_name <- unique(df_analysis$study)
+    if (study_name %in% c("DOSE", "GHANA", "HAITI")) {
+      model = gam(laz_el ~ arm_primary + s(iwi, bs = "cr", by = arm_primary), 
+                  data = df_analysis,
+                  family = "gaussian", method = "REML")
+    } else {
+      model = gam(laz_el ~ arm_primary + s(iwi, bs = "cr", by = arm_primary) + 
+                    s(cluster, bs = "re", by = dummy),
+                  data = df_analysis,
+                  family = "gaussian", method = "REML")
+    }
+    smooth_difference <- get_smooths_difference(model, iwi,
+                                                difference = list(arm_primary = c("Intervention","Control"))) 
+    data.frame(study = study_name, smooth_difference)
+  }) %>%
+  bind_rows()
+
+```
+
+```{r 4, echo = TRUE, warning = FALSE}
+
+# Fit the overall GAM model to the pooled data
+df_analysis <- df_analysis %>%
+              mutate(study = as.factor(study))
+
+overall_model <- gam(laz_el~  iwi + arm_primary + iwi*arm_primary + 
+                        s(iwi,by = arm_primary,bs="cr") +  
+                        s(study,bs = "re"),  
+                        #s(study,iwi, bs = "re")+  
+                        #s(study,arm_primary,bs = "re"),
+                      family = "gaussian", data = df_analysis, 
+                      nthreads = 8, method = "REML")
+```
+
+```{r 5, echo = TRUE, warning = FALSE}
+
+# Get the smooth differences for the overall model
+overall_smooth_difference <- get_smooths_difference(overall_model, iwi,
+                                                    difference = list(arm_primary = c("Intervention","Control"))) # nolint
+
+# Add the overall smooth differences to the smooth_differences data frame
+smooth_differences <- smooth_differences %>%
+  bind_rows(data.frame(study = "Overall", overall_smooth_difference))
+
+```
+
+Plot
+
+```{r 6, echo = TRUE, warning = FALSE}
+
+# Get the last point of each study
+last_points <- smooth_differences %>%
+  group_by(study) %>%
+  filter(iwi == max(iwi))
+
+# Filter the data for the "Overall" study
+smooth_differences_overall <- smooth_differences %>%
+  filter(study == "Overall")
+
+# Generate a color palette
+color_palette <- #hcl.colors(18, "Set3")
+                c(brewer.pal(name="Set2", n = 6), brewer.pal(name="Dark2", n = 7))
+
+# Get the unique studies
+studies <- unique(smooth_differences$study)
+
+# Assign colors to studies
+names(color_palette) <- studies
+
+# Change the color for "Overall" to grey
+color_palette["Overall"] <- "black"
+
+# Plot the differences
+
+plot_diff <- ggplot(smooth_differences, aes(x = iwi, y = difference, color = study)) + 
+  #geom_ribbon(data = smooth_differences, aes(ymin = CI_lower, ymax = CI_upper, color = study, fill = study), alpha = 0.1) +
+  geom_line(aes(), linewidth = 0.7) +
+  geom_hline(aes(yintercept = 0), linetype = "dotted") +
+  geom_ribbon(data = smooth_differences_overall, aes(ymin = CI_lower, ymax = CI_upper, color = "grey"), alpha = 0.4) + # nolint
+  geom_text_repel(data = last_points, aes(label = study), hjust = -0.1) +
+  labs(#title = "LAZ between intervention and control",
+       x = "IWI",
+       y = "LAZ mean difference") +
+  scale_y_continuous(breaks = seq(min(smooth_differences$CI_lower), max(smooth_differences$CI_upper), by = 0.2), # nolint
+                     labels = function(x) round(x, 2)) +
+  scale_color_manual(values = color_palette) +
+  theme_minimal() +
+  theme(legend.position = "none") 
+
+plot_diff
+```
+
+
+```{r 7, echo = TRUE, warning = FALSE}
+
+gam_diff <- plot_smooths(model = overall_model, series = iwi, 
+                         comparison = arm_primary) +
+                 #scale_colour_manual(values = c('turquoise','#E69F00')) + 
+                 #scale_fill_manual(values = c('turquoise','#E69F00')) + 
+                 scale_linetype_manual(values=c("solid","dashed")) +
+                 labs(colour = "Arms", fill = "Arms", linetype = "Arms") +
+                 labs(x = "IWI",
+                      y = "LAZ"#, tag = "a \n"
+                      ) +
+                    #title = "gam") +
+                 #coord_cartesian(lim=c(0.01,0.12)) +
+                 theme_minimal() +
+                 theme(legend.position = c(0.25,0.75),
+                       legend.title = element_blank()
+                       ) 
+#gam_plot_prev <- gam_plot_prev + coord_fixed(ratio=10) #10 divided by 1
+
+gam_diff
+
+```
+
+```{r 8, echo = TRUE, warning = FALSE}
+
+
+df_analysis <- readRDS(file = here::here("data", "1-final",
+                      "df_analysis_iwi.rds")) %>% 
+  mutate(study = sub("s[0-9]*_", "", study.x)) %>%
+  select(study, pid, cluster, arm_primary, iwi, laz_el) %>% 
+  dplyr::filter(!is.na(iwi)) %>%
+  #mutate(iwi = case_when(iwi < 70 ~ iwi)) %>%
+  dplyr::filter(!is.na(arm_primary)) %>%
+  dplyr::filter(!is.na(laz_el)) %>%
+  mutate(arm_primary = factor(arm_primary, levels = c(0,1), 
+                              labels = c("Control","Intervention")),
+         iwi = as.numeric(iwi),
+         cluster = factor(cluster),
+         laz_el = as.numeric(laz_el),
+         dummy = rep(1, n()))
+
+# Calculate frequency of each iwi bin
+df_analysis_freq <- df_analysis %>%
+  filter(!is.na(iwi)) %>%  # Filter out NA values in the iwi column
+  mutate(iwi_bin = cut(iwi, breaks = c(-Inf, 0, seq(10, 100, by = 10)), 
+                       include.lowest = TRUE)) %>%
+  filter(!is.na(iwi_bin)) %>%
+  group_by(iwi_bin, study) %>%
+  summarize(frequency = n()) %>%
+  ungroup() %>%
+  arrange(frequency)
+
+df_analysis_freq <- df_analysis_freq %>%
+  mutate(iwi_bin_num = case_when(iwi_bin == "[-Inf,0]" ~ 0, 
+                                 iwi_bin == "(0,10]" ~ 1,
+                                 iwi_bin == "(10,20]" ~ 2,
+                                 iwi_bin == "(20,30]" ~ 3,
+                                 iwi_bin == "(30,40]" ~ 4,
+                                 iwi_bin == "(40,50]" ~ 5,
+                                 iwi_bin == "(50,60]" ~ 6,
+                                 iwi_bin == "(60,70]" ~ 7,
+                                 iwi_bin == "(70,80]" ~ 8,
+                                 iwi_bin == "(80,90]" ~ 9,
+                                 iwi_bin == "(90,100]" ~ 10,
+                                 TRUE ~ as.numeric(iwi_bin)))
+
+
+stacked_plot <- ggplot(df_analysis_freq, aes(x=iwi_bin_num*10, 
+                             y=frequency, fill=study)) + 
+                geom_area(alpha=0.6 , linewidth=0.5, colour="black") +
+                geom_vline(xintercept = 70, linetype = "dashed", color = "black") +
+                scale_fill_manual(values = color_palette) +
+                theme_minimal() +
+                scale_x_continuous(limits = c(0, NA)) + # Ensure x-axis starts at 0
+                labs(x = "IWI", y = "Frequency") 
+                #theme(legend.position = "bottom")
+stacked_plot
+
+```
+
+
+
+```{r 9, echo = TRUE, warning = FALSE}
+
+plot_composite <- plot_grid(gam_diff, plot_diff, stacked_plot,
+                               nrow=3, align = "h") 
+plot_composite
+
+
+```
+
+```{r 10, echo = TRUE, warning = FALSE}
+
+# Save the plot
+ggsave(here::here("output", "gam_pooled_tidymv_laz.png"),
+       plot = plot_composite, width = 8, height = 10, dpi = 300)
+```
+
+Session info
+
+```{r session info, echo = TRUE, warning = FALSE}
+sessionInfo()
+  
+```
+
