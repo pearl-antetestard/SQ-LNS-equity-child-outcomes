@@ -44,3 +44,5 @@ To run the analyses:
 1. Clone this GitHub repository.
 2. The scripts to reproduce the Figures are numbered sequentially from 1 to 6.
 
+Note: The data that support the findings of this analysis are a combination of data from multiple principal investigators and institutions. The data are available, upon reasonable request, to the requestor by contacting the individual principal investigators. The corresponding author can facilitate contact with the individual principal investigators upon request.
+
