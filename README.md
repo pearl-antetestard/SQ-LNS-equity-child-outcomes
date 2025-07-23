@@ -42,7 +42,9 @@ The installation time should be < 10 minutes total on a typical desktop computer
 To run the analyses:
 
 1. Clone this GitHub repository.
-2. The scripts to reproduce the Figures are numbered sequentially from 1 to 6.
+2. Start with the script `0-config.R` to install the required packages and set up the environment.
+3. There is a simulated dataset (.csv and .rds) to test/run the codes. This is not a real data. To access the simulated dataset on OSF: click on Script > Simulated data. Just note that the simulated outcome here is laz (variable name: laz_el), so it won't run for other scripts adapted to other outcomes, unless the variable names are changed accordingly (e.g., wlz_el for wlz, stunted_el for stunting), and the clusters are set to NA for the studies that do not have clusters. You can also make your own simulated data using the script `simulate-data.R`.
+4. The scripts to reproduce the Figures are numbered sequentially from 1 to 6.
 
 Note: The data that support the findings of this analysis are a combination of data from multiple principal investigators and institutions. The data are available, upon reasonable request, to the requestor by contacting the individual principal investigators. The corresponding author can facilitate contact with the individual principal investigators upon request.
 
