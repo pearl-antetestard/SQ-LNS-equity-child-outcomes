@@ -1,0 +1,597 @@
+---
+title: "Adherence by IWI"
+author: "Pearl Ante-Testard"
+date: "`r Sys.Date()`"
+output: pdf_document
+knit: (function(inputFile, encoding) {
+        rmarkdown::render(inputFile, 
+                          encoding   = encoding, 
+                          output_dir = here::here("output")
+                          )})
+---
+
+```{r clean environment, echo=FALSE}
+
+rm(list=ls(all=TRUE))
+
+```
+
+```{r packages and functions, echo = TRUE, warning = FALSE}
+
+source(here::here("R", "0-config.R"))
+
+```
+
+```{r read formatted data, echo=FALSE}
+
+df_analysis <- readRDS(file = here::here("data", "1-final",
+                                             "df_analysis_iwi.rds")) %>% 
+  dplyr::mutate(study = sub("s[0-9]*_", "", study.x)) %>%
+  select(study, pid, region, cluster, iwi, study_pid.x) %>% 
+  dplyr::filter(!is.na(iwi)) %>%
+  dplyr::mutate(
+                iwi = as.numeric(iwi),
+                cluster = factor(cluster),
+                region = factor(region))
+
+colnames(df_analysis) <- c("study", "pid", "region", "cluster", 
+                            "iwi", "study_pid",
+                            "dummy" )
+
+```
+
+
+## iLiNS
+
+```{r 1, echo = TRUE, warning = FALSE}
+
+## Load the iLins data
+df_compliance_ilins <- read_dta(file = here::here("data", "0-untouched",
+                                           "Adherence",
+                                           "ilins_adherene_20250421.dta")) %>%
+  dplyr::mutate(study = sub("s[0-9]*_", "", study))
+
+table(df_compliance_ilins$study)
+
+merged_df_ilins <- left_join(df_compliance_ilins, df_analysis,
+                       by = c("study_pid","study"))
+# Create a new variable by cutting IWI into specified ranges
+merged_df_ilins$IWI_category <- cut(
+  merged_df_ilins$iwi,
+  breaks = c(0, 20, 40, 60, 80, 100),
+  labels = c("0-20", "21-40", "41-60", "61-80", "81-100"),
+  include.lowest = TRUE
+)
+
+# Summarize the percentage of adherencechild within each IWI_category
+summary_ilins <- merged_df_ilins %>%
+  group_by(IWI_category) %>%
+  summarise(
+    mean_adherence = mean(adherencechild, na.rm = TRUE)  
+  )
+summary_ilins <- summary_ilins %>%
+  filter(!is.na(IWI_category))
+# View the summary
+print(summary_ilins)
+
+# Create the bar plot
+a <- ggplot(summary_ilins, aes(x = IWI_category, y = mean_adherence)) +
+  geom_bar(stat = "identity", fill = "black") +
+  ylim(0, 100) +
+  scale_x_discrete(drop = FALSE) +
+  theme_minimal() +
+  labs(
+    #title = "Mean adherence by IWI category (iLiNS)",
+    x = "IWI category",
+    y = "iLiNS (all studies)\n(Mean % days the child reported \nconsuming LNS weekly)"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),  # Rotate x-axis labels
+    legend.position = "none"  # Remove legend
+  )
+
+## Subset the data by study
+
+## DOSE
+df_compliance_ilins_dose <- df_compliance_ilins %>%
+  filter(study == "DOSE") 
+
+merged_df_dose <- left_join(df_compliance_ilins_dose, df_analysis,
+                       by = c("study_pid","study"))
+
+# Create a new variable by cutting IWI into specified ranges
+merged_df_dose$IWI_category <- cut(
+  merged_df_dose$iwi,
+  breaks = c(0, 20, 40, 60, 80, 100),
+  labels = c("0-20", "21-40", "41-60", "61-80", "81-100"),
+  include.lowest = TRUE
+)
+
+# Summarize the percentage of adherencechild within each IWI_category
+summary_dose <- merged_df_dose %>%
+  group_by(IWI_category) %>%
+  summarise(
+    mean_adherence = mean(adherencechild, na.rm = TRUE)  
+  )
+summary_dose <- summary_dose %>%
+  filter(!is.na(IWI_category)) 
+
+# View the summary
+print(summary_dose)
+
+# Create the bar plot
+a_dose <- ggplot(summary_dose, aes(x = IWI_category, y = mean_adherence)) +
+  geom_bar(stat = "identity", fill = "black") +
+  ylim(0, 100) +
+  scale_x_discrete(drop = FALSE) +
+  theme_minimal() +
+  labs(
+    #title = "Mean adherence by IWI Category (DOSE)",
+    x = "IWI category",
+    y = "iLiNS-DOSE\n(Mean % days the child reported \nconsuming LNS weekly)"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),  # Rotate x-axis labels
+    legend.position = "none"  # Remove legend
+  )
+
+print(a_dose)
+
+## DYADG
+df_compliance_ilins_dyadg <- df_compliance_ilins %>%
+  filter(study == "DYADG")
+
+merged_df_dyadg <- left_join(df_compliance_ilins_dyadg, df_analysis,
+                       by = c("study_pid","study"))
+# Create a new variable by cutting IWI into specified ranges
+merged_df_dyadg$IWI_category <- cut(
+  merged_df_dyadg$iwi,
+  breaks = c(0, 20, 40, 60, 80, 100),
+  labels = c("0-20", "21-40", "41-60", "61-80", "81-100"),
+  include.lowest = TRUE
+)
+
+# Summarize the percentage of adherencechild within each IWI_category
+summary_dyadg <- merged_df_dyadg %>%
+  group_by(IWI_category) %>%
+  summarise(
+    mean_adherence = mean(adherencechild, na.rm = TRUE)  
+  )
+summary_dyadg <- summary_dyadg %>%
+  filter(!is.na(IWI_category))
+# View the summary
+print(summary_dyadg)
+
+# Create the bar plot
+a_dyadg <- ggplot(summary_dyadg, aes(x = IWI_category, y = mean_adherence)) +
+  geom_bar(stat = "identity", fill = "black") +
+  ylim(0, 100) +
+  scale_x_discrete(drop = FALSE) +
+  theme_minimal() +
+  labs(
+    #title = "Mean adherence by IWI category (DYADG)",
+    x = "IWI category",
+    y = "iLiNS-DYADG\n(Mean % days the child reported \nconsuming LNS weekly)"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),  # Rotate x-axis labels
+    legend.position = "none"  # Remove legend
+  )
+
+print(a_dyadg)
+
+## DYADM
+df_compliance_ilins_dyadm <- df_compliance_ilins %>%
+  filter(study == "DYADM")
+
+merged_df_dyadm <- left_join(df_compliance_ilins_dyadm, df_analysis,
+                       by = c("study_pid","study"))
+
+# Create a new variable by cutting IWI into specified ranges
+merged_df_dyadm$IWI_category <- cut(
+  merged_df_dyadm$iwi,
+  breaks = c(0, 20, 40, 60, 80, 100),
+  labels = c("0-20", "21-40", "41-60", "61-80", "81-100"),
+  include.lowest = TRUE
+)
+
+# Summarize the percentage of adherencechild within each IWI_category
+summary_dyadm <- merged_df_dyadm %>%
+  group_by(IWI_category) %>%
+  summarise(
+    mean_adherence = mean(adherencechild, na.rm = TRUE)  
+  )
+summary_dyadm <- summary_dyadm %>%
+  filter(!is.na(IWI_category))
+# View the summary
+print(summary_dyadm)
+
+# Create the bar plot
+a_dyadm <- ggplot(summary_dyadm, aes(x = IWI_category, y = mean_adherence)) +
+  geom_bar(stat = "identity", fill = "black") +
+  ylim(0, 100) +
+  scale_x_discrete(drop = FALSE) +
+  theme_minimal() +
+  labs(
+    #title = "Mean adherence by IWI category (DYADM)",
+    x = "IWI category",
+    y = "iLiNS-DYADM\n(Mean % days the child reported \nconsuming LNS weekly)"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),  # Rotate x-axis labels
+    legend.position = "none"  # Remove legend
+  )
+
+print(a_dyadm)
+
+## ZINC
+df_compliance_ilins_zinc <- df_compliance_ilins %>%
+  filter(study == "ZINC")
+merged_df_zinc <- left_join(df_compliance_ilins_zinc, df_analysis,
+                       by = c("study_pid","study"))
+# Create a new variable by cutting IWI into specified ranges
+merged_df_zinc$IWI_category <- cut(
+  merged_df_zinc$iwi,
+  breaks = c(0, 20, 40, 60, 80, 100),
+  labels = c("0-20", "21-40", "41-60", "61-80", "81-100"),
+  include.lowest = TRUE
+)
+
+# Summarize the percentage of adherencechild within each IWI_category
+summary_zinc <- merged_df_zinc %>%
+  group_by(IWI_category) %>%
+  summarise(
+    mean_adherence = mean(adherencechild, na.rm = TRUE)  
+  )
+summary_zinc <- summary_zinc %>%
+  filter(!is.na(IWI_category))
+# View the summary
+print(summary_zinc)
+
+# Create the bar plot
+a_zinc <- ggplot(summary_zinc, aes(x = IWI_category, y = mean_adherence)) +
+  geom_bar(stat = "identity", fill = "black") +
+  ylim(0, 100) +
+  scale_x_discrete(drop = FALSE) +
+  theme_minimal() +
+  labs(
+    #title = "Mean adherence by IWI category (ZINC)",
+    x = "IWI category",
+    y = "iLiNS-ZINC\n(Mean % days the child reported \nconsuming LNS weekly)"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),  # Rotate x-axis labels
+    legend.position = "none"  # Remove legend
+  )
+
+print(a_zinc)
+
+cor(merged_df_ilins$iwi, merged_df_ilins$adherencechild, use = "complete.obs", method = "pearson")
+
+```
+
+## RDNS
+
+```{r 2, echo = TRUE, warning = FALSE}
+
+## RDNS
+df_compliance_rdns <- read_dta(file = here::here("data", "0-untouched",
+                                                  "Adherence",
+                                      "s106_RDNS_adherence_20250421.dta")) 
+
+merged_df_rdns <- left_join(df_compliance_rdns, df_analysis,
+                       by = c("study_pid"))
+# Create a new variable by cutting IWI into specified ranges
+merged_df_rdns$IWI_category <- cut(
+  merged_df_rdns$iwi,
+  breaks = c(0, 20, 40, 60, 80, 100),
+  labels = c("0-20", "21-40", "41-60", "61-80", "81-100"),
+  include.lowest = TRUE
+)
+
+# Create a percentage variable for md2_211
+#merged_df_rdns <- merged_df_rdns %>%
+  #mutate(md2_211_perc = (merged_df_rdns$md2_211 / 7 * 100))
+
+# Summarize the percentage of md2_211 within each IWI_category
+summary_rdns <- merged_df_rdns %>%
+  group_by(IWI_category) %>%
+  summarise(
+    mean_adherence = mean(md2_211, na.rm = TRUE) 
+  )
+summary_rdns <- summary_rdns %>%
+  filter(!is.na(IWI_category))
+# View the summary
+print(summary_rdns)
+
+# Create the bar plot
+b <- ggplot(summary_rdns, aes(x = IWI_category, y = mean_adherence)) +
+  geom_bar(stat = "identity", fill = "black") +
+  ylim(0, 6) +
+  scale_x_discrete(drop = FALSE) +
+  theme_minimal() +
+  labs(
+    #title = "Mean adherence by IWI category (RDNS)",
+    x = "IWI category",
+    y = "RDNS\n(Mean no.of packets of supplements/tablets \neaten in the last week)"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),  # Rotate x-axis labels
+    legend.position = "none"  # Remove legend
+  )
+
+print(b)
+
+cor(merged_df_rdns$iwi, merged_df_rdns$md2_211, use = "complete.obs", method = "pearson")
+
+```
+
+## WASHB Kenya
+
+```{r 3, echo = TRUE, warning = FALSE}
+
+## WASHB Kenya
+df_compliance_washbkenya <- read_dta(file = here::here("data",
+                                                       "0-untouched",
+                                                  "Adherence",
+                                    "s113_WASHK_adherence_20250421.dta"))
+
+merged_df_washbkenya <- left_join(df_compliance_washbkenya, df_analysis,
+                       by = c("study_pid"))
+
+# Create a new variable by cutting IWI into specified ranges
+merged_df_washbkenya$IWI_category <- cut(
+  merged_df_washbkenya$iwi,
+  breaks = c(0, 20, 40, 60, 80, 100),
+  labels = c("0-20", "21-40", "41-60", "61-80", "81-100"),
+  include.lowest = TRUE
+)
+# Summarize the percentage of lns_el within each IWI_category
+summary_washbkenya <- merged_df_washbkenya %>%
+  group_by(IWI_category) %>%
+  summarise(
+    mean_adherence = mean(lns_el, na.rm = TRUE) * 100
+  )
+summary_washbkenya <- summary_washbkenya %>%
+  filter(!is.na(IWI_category))
+# View the summary
+print(summary_washbkenya)
+
+# Create the bar plot
+c <- ggplot(summary_washbkenya, aes(x = IWI_category, y = mean_adherence)) +
+  geom_bar(stat = "identity", fill = "black") +
+  ylim(0, 123) +
+  scale_x_discrete(drop = FALSE) +
+  theme_minimal() +
+  labs(
+    #title = "Mean adherence by IWI category (WASHB Kenya)",
+    x = "IWI category",
+    y = "WASHB Kenya\n(Mean % sachets the child consumed \nin the past week divided by 14)"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),  # Rotate x-axis labels
+    legend.position = "none"  # Remove legend
+  )
+
+print(c)
+
+cor(merged_df_washbkenya$iwi, merged_df_washbkenya$lns_el, use = "complete.obs", method = "pearson")
+
+```
+
+## WASHB Bangladesh
+
+```{r 4, echo = TRUE, warning = FALSE}
+
+## WASHB Bangladesh
+df_compliance_washbbangladesh <- read_dta(file = 
+                                            here::here("data",
+                                                  "0-untouched",
+                                                  "Adherence",                                      "washb-bangladesh-uptake-public.dta")) %>%
+  dplyr::mutate(study_pid = dataid) %>%
+  distinct(study_pid, .keep_all = TRUE) 
+
+df_analysis <- df_analysis %>%
+  filter(study == "WASHB") 
+
+merged_df_washbbangladesh <- left_join(df_compliance_washbbangladesh,
+                                       df_analysis,
+                       by = c("study_pid")) 
+
+# Create a new variable by cutting IWI into specified ranges
+merged_df_washbbangladesh$IWI_category <- cut(
+  merged_df_washbbangladesh$iwi,
+  breaks = c(0, 20, 40, 60, 80, 100),
+  labels = c("0-20", "21-40", "41-60", "61-80", "81-100"),
+  include.lowest = TRUE
+)
+# list the indicators to include
+inds <- c("rlnsp")
+
+# reshape long to calculate means and Ns for selected indicators
+dlong <- merged_df_washbbangladesh %>%
+  select(-svyyear) %>%
+  gather(indicator,value,-dataid,-clusterid,-block,-svy,-IWI_category) %>%
+  filter(indicator %in% inds ) %>%
+  group_by(indicator,IWI_category, svy)
+
+dsum <- dlong %>%
+  mutate(value = as.numeric(value)) %>%  # Convert value to numeric
+  summarize(
+    mean = mean(value, na.rm = TRUE),
+    N = sum(!is.na(value)),
+    n = sum(value, na.rm = TRUE)
+  ) %>%
+  ungroup() %>%
+  mutate(indicator = factor(indicator, levels = inds)) %>%
+  arrange(indicator, IWI_category, svy)
+
+dsum <- dsum %>%
+  filter(!is.na(IWI_category)) %>%
+  filter(svy == "2")
+  
+
+# Create the bar plot
+d <- ggplot(dsum, aes(x = IWI_category, y = mean*100)) +
+  geom_bar(stat = "identity", fill = "black") +
+  scale_x_discrete(drop = FALSE) +
+  theme_minimal() +
+  labs(
+    #title = "Mean adherence by IWI category (WASHB Bangladesh)",
+    x = "IWI category",
+    y = "WASHB Bangladesh\n(Mean % expected LNS consumed)"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),  # Rotate x-axis labels
+    legend.position = "none"  # Remove legend
+  )
+
+print(d)
+
+cor(merged_df_washbbangladesh$iwi, merged_df_washbbangladesh$rlnsp, use = "complete.obs", method = "pearson")
+
+```
+## PROMIS studies
+
+```{r 5}
+
+## PROMIS
+df_compliance_promis <- read_dta(file = here::here("data",
+                                                   "0-untouched",
+                                                  "Adherence",
+                                    "PROMIS_compliance_LNS.dta"))
+
+## PROMIS BF
+df_compliance_promis_bf <- df_compliance_promis %>%
+  filter(study == "PROMISBF") %>%
+  filter(compliance > 0.0) %>%
+  mutate(study_pid = as.character(study_pid)) 
+
+# Create a new variable by cutting IWI into specified ranges
+df_compliance_promis_bf$IWI_category <- cut(
+  df_compliance_promis_bf$iwi,
+  breaks = c(0, 20, 40, 60, 80, 100),
+  labels = c("0-20", "21-40", "41-60", "61-80", "81-100"),
+  include.lowest = TRUE
+)
+# Summarize the percentage of compliance within each IWI_category
+summary_promisbf <- df_compliance_promis_bf %>%
+  group_by(IWI_category) %>%
+  summarise(
+    mean_adherence = mean(compliance, na.rm = TRUE) 
+  )
+summary_promisbf <- summary_promisbf %>%
+  filter(!is.na(IWI_category))
+# View the summary
+print(summary_promisbf)
+
+# Create the bar plot
+e <- ggplot(summary_promisbf, aes(x = IWI_category, y = mean_adherence)) +
+  geom_bar(stat = "identity", fill = "black") +
+  ylim(0, 100) +
+  scale_x_discrete(drop = FALSE) +
+  theme_minimal() +
+  labs(
+    #title = "Mean adherence by IWI category (PROMIS BF)",
+    x = "IWI category",
+    y = "PROMIS BF\n(Mean % monthly LNS doses received)"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),  # Rotate x-axis labels
+    legend.position = "none"  # Remove legend
+  )
+
+print(e)
+
+#cor(summary_promisbf$iwi, summary_promisbf$compliance, use = "complete.obs", method = "pearson")
+
+## PROMISM
+
+df_compliance_promism <- df_compliance_promis %>%
+  filter(study == "PROMISM") %>%
+  filter(compliance > 0.0) %>%
+  mutate(study_pid = as.character(study_pid)) 
+
+# Create a new variable by cutting IWI into specified ranges
+df_compliance_promism$IWI_category <- cut(
+  df_compliance_promism$iwi,
+  breaks = c(0, 20, 40, 60, 80, 100),
+  labels = c("0-20", "21-40", "41-60", "61-80", "81-100"),
+  include.lowest = TRUE
+)
+# Summarize the percentage of compliance within each IWI_category
+summary_promism <- df_compliance_promism %>%
+  group_by(IWI_category) %>%
+  summarise(
+    mean_adherence = mean(compliance, na.rm = TRUE) 
+  )
+summary_promism <- summary_promism %>%
+  filter(!is.na(IWI_category))
+# View the summary
+print(summary_promism)
+
+# Create the bar plot
+f <- ggplot(summary_promism, aes(x = IWI_category, y = mean_adherence)) +
+  geom_bar(stat = "identity", fill = "black") +
+  ylim(0, 100) +
+  scale_x_discrete(drop = FALSE) +
+  theme_minimal() +
+  labs(
+    #title = "Mean adherence by IWI category (PROMISM)",
+    x = "IWI category",
+    y = "PROMISM\n(Mean % monthly LNS doses received)"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),  # Rotate x-axis labels
+    legend.position = "none"  # Remove legend
+  )
+
+print(f)
+
+#cor(df_compliance_promism$iwi, df_compliance_promism$compliance, use = "complete.obs", method = "pearson")
+
+
+```
+
+
+## Combine plots
+
+```{r combine plots, echo = TRUE, warning = FALSE}
+
+#a_all <- a_dose + a_dyadg + a_dyadm + a_zinc + a
+a_all <- plot_grid(a_dose, a_dyadg, a_dyadm, a_zinc, a, NULL,
+                   nrow = 3, ncol = 2, 
+                        rel_widths = c(1, 1),      
+                        rel_heights = c(1, 1))
+print(a_all)
+
+# Add a placeholder for the fourth cell
+others_all <- plot_grid(b, c, d, e, f, NULL, nrow = 3, ncol = 2, 
+                        rel_widths = c(1, 1),      
+                        rel_heights = c(1, 1))
+print(others_all)
+
+# Combine the two plots into a 2x2 grid
+combined_plot <- plot_grid(a_all, others_all, nrow = 1, ncol = 2, 
+                           labels = c("A", "B"))
+print(combined_plot)
+
+```
+
+## Save the plots
+
+```{r save plots, echo = FALSE, warning = FALSE}
+
+ggsave(here::here("output", "adherence_iwi.png"), 
+       plot = combined_plot, 
+       width = 14, height = 10, units = "in", dpi = 300)
+```
+
+
+Session info
+
+```{r session info, echo = TRUE, warning = FALSE}
+
+sessionInfo()
+  
+```
