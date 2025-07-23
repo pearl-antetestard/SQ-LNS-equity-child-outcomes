@@ -3,7 +3,7 @@
 ## Description
 This repository includes R codes to support the paper:
 
-_"Equity in the effect of small-quantity lipid-based nutrient supplements on child growth, development and anemia"_
+_"Assessing equity in effects of small-quantity lipid-based nutrient supplements on child growth, development and anemia"_
 
 PA Ante-Testard, CD Arnold, KR Wessells, S Adu-Afarwuah, P Ashorn, E Becquey, KH Brown, P Christian, JM Colford, Jr, L LCH Fernald, E Galasso, SY Hess, JH Humphrey, L Huybregts, LL Iannotti, SP Luby, K Maleta, C Null, AJ Prendergast, AM Weber, H Ali, S Ali, U Ashorn, J Bendabenda, B Chasekwa, L Diop, SJL Dulience, K Jannat, C Kumwenda, A Lartey, A Le Port, J Leroy, C Mangani, S Matias, MK Mridha, R Ntozini, H Okronipa, JB Ouedraogo, J Phuka, M Rahman, L Ratsifandrihamanana, M Ruel, S Shaikh, AA Shamim, N Tavengwa, M Touré, P Wolff, T Benmarhnia, CP Stewart, KG Dewey, BF Arnold
 
