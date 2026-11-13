@@ -22,9 +22,14 @@ University of California, San Francisco
 
 ## Open Science Framework
 
-A mirror of this repository and the study pre-analysis plan are archived on the Open Science Framework (OSF):
+A mirror of this repository and the study pre-analysis plan are archived on Zenodo:
+
+**[https://doi.org/10.5281/zenodo.24178656](https://doi.org/10.5281/zenodo.24178656)**
+
+It is also archived on the Open Science Framework (OSF) as read-only:
 
 **[https://osf.io/c7f5g/](https://osf.io/c7f5g/)**
+
 
 Simulated datasets are available within the OSF project under **Script > Simulated data**.
 
@@ -135,6 +140,6 @@ Four main driver files generate Figures 1–6.
   sessionInfo()
   ```
 
-- To reproduce the published estimates, obtain the original trial data and use the documented analysis settings.
+- The data that support the findings of this analysis are a combination of data from multiple principal investigators and institutions. The data are available, upon reasonable request, to the requestor by contacting the individual principal investigators. The corresponding author can facilitate contact with the individual principal investigators upon request.
 
 
