@@ -140,6 +140,4 @@ Four main driver files generate Figures 1–6.
   sessionInfo()
   ```
 
-- The data that support the findings of this analysis are a combination of data from multiple principal investigators and institutions. The data are available, upon reasonable request, to the requestor by contacting the individual principal investigators. The corresponding author can facilitate contact with the individual principal investigators upon request.
-
 
