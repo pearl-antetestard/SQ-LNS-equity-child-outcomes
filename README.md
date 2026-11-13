@@ -20,7 +20,7 @@ For questions about the code or assistance contacting the study principal invest
 University of California, San Francisco  
 [pearl.ante@ucsf.edu](mailto:pearl.ante@ucsf.edu)
 
-## Open Science Framework
+## Zenodo and OSF
 
 A mirror of this repository and the study pre-analysis plan are archived on Zenodo:
 
